@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, memo } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -19,7 +19,8 @@ import {
   ArrowDownToLine,
   UserCheck,
   DollarSign,
-  CircleArrowLeft
+  CircleArrowLeft,
+  Loader2
 } from "lucide-react"
 import {
   LineChart,
@@ -28,10 +29,12 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer
+  ResponsiveContainer,
+  Legend
 } from "recharts"
 import { toast } from "react-hot-toast"
 import { useRouter } from "next/navigation"
+import { auth } from "@/auth"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -43,7 +46,6 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog"
-import { Loader2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 
 // Mock data
@@ -210,7 +212,7 @@ interface ReferralStats {
   referredUsers: Array<ReferredUser>;
 }
 
-const StatCard = memo(({ title, value, icon: Icon }: StatCardProps) => {
+const StatCard = ({ title, value, icon: Icon }: StatCardProps) => {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -222,7 +224,7 @@ const StatCard = memo(({ title, value, icon: Icon }: StatCardProps) => {
       </CardContent>
     </Card>
   )
-})
+}
 
 const generateReferralCode = () => {
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -280,120 +282,132 @@ const DashboardPage = () => {
   })
 
   useEffect(() => {
-    setMounted(true)
-    
-    const token = localStorage.getItem("token")
-    if (!token) {
-      router.push("/login")
-      return
-    }
-
-    const fetchDashboardData = () => {
-      // Get user data
-      const userDataStr = localStorage.getItem("userData")
-      if (userDataStr) {
-        const userData = JSON.parse(userDataStr)
-        setUserName(userData.name || "User")
-      }
-
-      // Get selected plan and payment status
-      const storedPlanStr = localStorage.getItem("selectedPlan")
-      const paymentStr = localStorage.getItem("payment")
-      
-      if (storedPlanStr) {
-        try {
-          const storedPlan = JSON.parse(storedPlanStr)
-          const payment = paymentStr ? JSON.parse(paymentStr) : null
-          
-          // Only show plan as active if payment is completed
-          const planStatus = payment?.status === 'completed' ? 'active' : 'pending'
-          
-          const formattedPlan: Plan = {
-            name: formatPlanName(storedPlan.name),
-            price: Number(storedPlan.price),
-            status: planStatus,
-            purchaseDate: storedPlan.purchaseDate || new Date().toISOString(),
-            referralBonus: {
-              type: 'percentage',
-              value: 10
-            }
-          }
-          
-          setSelectedPlan(planStatus === 'active' ? formattedPlan : null)
-        } catch (error) {
-          console.error("Error parsing plan/payment data:", error)
-          localStorage.removeItem("selectedPlan")
-          localStorage.removeItem("payment")
+    const initializeDashboard = async () => {
+      try {
+        setMounted(true)
+        const session = await auth()
+        
+        if (!session) {
+          router.push("/login")
+          return
         }
-      }
 
-      // Get wallet stats
-      const storedStats = localStorage.getItem('walletStats')
-      if (storedStats) {
-        const stats = JSON.parse(storedStats)
-        setWalletBalance(stats.balance)
-        setTotalEarnings(stats.totalEarnings)
-        setTotalWithdrawals(stats.totalWithdrawals)
-        setPendingWithdrawals(stats.pendingWithdrawals)
-      }
+        const fetchDashboardData = () => {
+          try {
+            // Get user data from session
+            if (session.user) {
+              setUserName(session.user.name || "User")
+            }
 
-      // Load withdrawal history
-      const storedWithdrawals = localStorage.getItem('withdrawals')
-      if (storedWithdrawals) {
-        setWithdrawals(JSON.parse(storedWithdrawals))
-      }
+            // Get selected plan and payment status
+            const storedPlanStr = localStorage.getItem("selectedPlan")
+            const paymentStr = localStorage.getItem("payment")
+            
+            if (storedPlanStr) {
+              try {
+                const storedPlan = JSON.parse(storedPlanStr)
+                const payment = paymentStr ? JSON.parse(paymentStr) : null
+                
+                const planStatus = payment?.status === 'completed' ? 'active' : 'pending'
+                
+                const formattedPlan: Plan = {
+                  name: formatPlanName(storedPlan.name),
+                  price: Number(storedPlan.price),
+                  status: planStatus,
+                  purchaseDate: storedPlan.purchaseDate || new Date().toISOString(),
+                  referralBonus: {
+                    type: 'percentage',
+                    value: 10
+                  }
+                }
+                
+                setSelectedPlan(planStatus === 'active' ? formattedPlan : null)
+              } catch (error) {
+                console.error("Error parsing plan/payment data:", error)
+                localStorage.removeItem("selectedPlan")
+                localStorage.removeItem("payment")
+              }
+            }
 
-      // Get payments
-      const storedPayments = localStorage.getItem('payments')
-      if (storedPayments) {
-        setPayments(JSON.parse(storedPayments))
-      }
+            // Get wallet stats
+            const storedStats = localStorage.getItem('walletStats')
+            if (storedStats) {
+              const stats = JSON.parse(storedStats)
+              setWalletBalance(stats.balance)
+              setTotalEarnings(stats.totalEarnings)
+              setTotalWithdrawals(stats.totalWithdrawals)
+              setPendingWithdrawals(stats.pendingWithdrawals)
+            }
 
-      // Handle last payment ID
-      const lastId = localStorage.getItem('lastPaymentId')
-      if (lastId) {
-        setLastPaymentId(lastId)
-        localStorage.removeItem('lastPaymentId')
-        toast.success("Payment submitted! We're processing your request.", {
-          duration: 5000,
-          icon: '🎉'
-        })
-      }
+            // Load withdrawal history
+            const storedWithdrawals = localStorage.getItem('withdrawals')
+            if (storedWithdrawals) {
+              setWithdrawals(JSON.parse(storedWithdrawals))
+            }
 
-      // Initialize or get existing referral code
-      let code = localStorage.getItem('myReferralCode')
-      if (!code) {
-        code = generateReferralCode()
-        localStorage.setItem('myReferralCode', code)
-        const storedCodes = JSON.parse(localStorage.getItem('referralCodes') || '[]')
-        storedCodes.push(code)
-        localStorage.setItem('referralCodes', JSON.stringify(storedCodes))
-      }
+            // Get payments
+            const storedPayments = localStorage.getItem('payments')
+            if (storedPayments) {
+              setPayments(JSON.parse(storedPayments))
+            }
 
-      setReferralData(prev => ({
-        ...prev,
-        myReferralCode: code,
-        code: code
-      }))
+            // Handle last payment ID
+            const lastId = localStorage.getItem('lastPaymentId')
+            if (lastId) {
+              setLastPaymentId(lastId)
+              localStorage.removeItem('lastPaymentId')
+              toast.success("Payment submitted! We're processing your request.", {
+                duration: 5000,
+                icon: '🎉'
+              })
+            }
+
+            // Initialize or get existing referral code
+            let code = localStorage.getItem('myReferralCode')
+            if (!code) {
+              code = generateReferralCode()
+              localStorage.setItem('myReferralCode', code)
+              const storedCodes = JSON.parse(localStorage.getItem('referralCodes') || '[]')
+              storedCodes.push(code)
+              localStorage.setItem('referralCodes', JSON.stringify(storedCodes))
+            }
+
+            setReferralData(prev => ({
+              ...prev,
+              myReferralCode: code,
+              code: code
+            }))
+          } catch (error) {
+            console.error("Error fetching dashboard data:", error)
+            toast.error("Error loading dashboard data")
+          }
+        }
+
+        // Initial data fetch
+        fetchDashboardData()
+        setIsLoading(false)
+
+        // Storage event handler
+        const handleStorageChange = () => {
+          fetchDashboardData()
+        }
+
+        // Set up storage event listener
+        window.addEventListener('storage', handleStorageChange)
+        
+        // Cleanup
+        return () => {
+          window.removeEventListener('storage', handleStorageChange)
+        }
+      } catch (error) {
+        console.error("Dashboard initialization error:", error)
+        setIsLoading(false)
+        router.push("/login")
+      }
     }
 
-    // Initial data fetch
-    fetchDashboardData()
-    setIsLoading(false)
-
-    // Storage event handler
-    const handleStorageChange = () => {
-      fetchDashboardData()
-    }
-
-    // Set up storage event listener
-    window.addEventListener('storage', handleStorageChange)
-    
-    // Cleanup
-    return () => {
-      window.removeEventListener('storage', handleStorageChange)
-    }
-  }, [router]) // router is the only external dependency needed
+    initializeDashboard()
+  }, [router])
 
   const handleWithdrawSubmit = async () => {
     if (!withdrawAmount || parseFloat(withdrawAmount) <= 0) {
