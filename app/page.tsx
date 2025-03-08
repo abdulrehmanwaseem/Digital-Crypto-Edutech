@@ -221,6 +221,8 @@ export default function Home() {
                   )}
                   priority={index === 0}
                   onLoadingComplete={() => setIsLoading(false)}
+                  onError={() => setIsLoading(false)}
+
                 />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="container px-4 text-center text-white">
