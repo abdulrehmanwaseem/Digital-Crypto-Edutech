@@ -32,6 +32,9 @@ export default async function RootLayout({
   console.log(user)
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+      <link rel="icon" href="/images/favicon.ico" sizes="any" />
+      </head>
       <body className={inter.className}>
         <SessionProvider>
           <ThemeProvider
