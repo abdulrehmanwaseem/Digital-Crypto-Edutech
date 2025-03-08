@@ -184,7 +184,7 @@ interface ReferralStats {
   currentTier: {
     threshold: number;
     bonus: number;
-  };
+  };  
   nextTier?: {
     threshold: number;
     bonus: number;
@@ -288,148 +288,112 @@ const DashboardPage = () => {
       return
     }
 
-    // Get user data
-    const userDataStr = localStorage.getItem("userData")
-    if (userDataStr) {
-      const userData = JSON.parse(userDataStr)
-      setUserName(userData.name || "User")
-    }
+    const fetchDashboardData = () => {
+      // Get user data
+      const userDataStr = localStorage.getItem("userData")
+      if (userDataStr) {
+        const userData = JSON.parse(userDataStr)
+        setUserName(userData.name || "User")
+      }
 
-    // Get selected plan and payment status
-    const storedPlanStr = localStorage.getItem("selectedPlan")
-    const paymentStr = localStorage.getItem("payment")
-    
-    if (storedPlanStr) {
-      try {
-        const storedPlan = JSON.parse(storedPlanStr)
-        const payment = paymentStr ? JSON.parse(paymentStr) : null
-        
-        // Only show plan as active if payment is completed
-        const planStatus = payment?.status === 'completed' ? 'active' : 'pending'
-        
-        const formattedPlan: Plan = {
-          name: formatPlanName(storedPlan.name),
-          price: Number(storedPlan.price),
-          status: planStatus,
-          purchaseDate: storedPlan.purchaseDate || new Date().toISOString(),
-          referralBonus: {
-            type: 'percentage',
-            value: 10
+      // Get selected plan and payment status
+      const storedPlanStr = localStorage.getItem("selectedPlan")
+      const paymentStr = localStorage.getItem("payment")
+      
+      if (storedPlanStr) {
+        try {
+          const storedPlan = JSON.parse(storedPlanStr)
+          const payment = paymentStr ? JSON.parse(paymentStr) : null
+          
+          // Only show plan as active if payment is completed
+          const planStatus = payment?.status === 'completed' ? 'active' : 'pending'
+          
+          const formattedPlan: Plan = {
+            name: formatPlanName(storedPlan.name),
+            price: Number(storedPlan.price),
+            status: planStatus,
+            purchaseDate: storedPlan.purchaseDate || new Date().toISOString(),
+            referralBonus: {
+              type: 'percentage',
+              value: 10
+            }
           }
-        }
-        
-        if (planStatus === 'active') {
-          setSelectedPlan(formattedPlan)
-        } else {
-          setSelectedPlan(null) // Don't show pending plans
-        }
-      } catch (error) {
-        console.error("Error parsing plan/payment data:", error)
-        // Clear invalid data
-        localStorage.removeItem("selectedPlan")
-        localStorage.removeItem("payment")
-      }
-    }
-
-    // Get wallet stats
-    const storedStats = localStorage.getItem('walletStats')
-    if (storedStats) {
-      const stats = JSON.parse(storedStats)
-      setWalletBalance(stats.balance)
-      setTotalEarnings(stats.totalEarnings)
-      setTotalWithdrawals(stats.totalWithdrawals)
-      setPendingWithdrawals(stats.pendingWithdrawals)
-    }
-
-    // Load withdrawal history
-    const storedWithdrawals = localStorage.getItem('withdrawals')
-    if (storedWithdrawals) {
-      setWithdrawals(JSON.parse(storedWithdrawals))
-    }
-
-    // Get payments from localStorage
-    const storedPayments = localStorage.getItem('payments')
-    if (storedPayments) {
-      setPayments(JSON.parse(storedPayments))
-    }
-
-    // Get last payment ID
-    const lastId = localStorage.getItem('lastPaymentId')
-    if (lastId) {
-      setLastPaymentId(lastId)
-      localStorage.removeItem('lastPaymentId')
-      
-      toast.success("Payment submitted! We're processing your request.", {
-        duration: 5000,
-        icon: '🎉'
-      })
-    }
-
-    // Get payment status
-    const payments = localStorage.getItem('payments')
-    if (payments) {
-      const paymentsList = JSON.parse(payments)
-      if (paymentsList.length > 0) {
-        const latestPayment = paymentsList[paymentsList.length - 1]
-        // Update plan status based on payment
-        if (selectedPlan) {
-          setSelectedPlan(prev => prev ? {
-            ...prev,
-            status: latestPayment.status
-          } : null)
+          
+          setSelectedPlan(planStatus === 'active' ? formattedPlan : null)
+        } catch (error) {
+          console.error("Error parsing plan/payment data:", error)
+          localStorage.removeItem("selectedPlan")
+          localStorage.removeItem("payment")
         }
       }
-    }
 
-    // Initialize or get existing referral code
-    let code = localStorage.getItem('myReferralCode')
-    if (!code) {
-      code = generateReferralCode()
-      localStorage.setItem('myReferralCode', code)
-      
-      // Store this code in the list of valid referral codes
-      const storedCodes = JSON.parse(localStorage.getItem('referralCodes') || '[]')
-      storedCodes.push(code)
-      localStorage.setItem('referralCodes', JSON.stringify(storedCodes))
-    }
-
-    // Update referral data state
-    setReferralData(prev => ({
-      ...prev,
-      myReferralCode: code,
-      code: code
-    }))
-
-    // Add loading state
-    const fetchData = async () => {
-      try {
-        // Fetch data
-        setIsLoading(false)
-      } catch (error) {
-        console.error("Error fetching data:", error)
-        setIsLoading(false)
+      // Get wallet stats
+      const storedStats = localStorage.getItem('walletStats')
+      if (storedStats) {
+        const stats = JSON.parse(storedStats)
+        setWalletBalance(stats.balance)
+        setTotalEarnings(stats.totalEarnings)
+        setTotalWithdrawals(stats.totalWithdrawals)
+        setPendingWithdrawals(stats.pendingWithdrawals)
       }
+
+      // Load withdrawal history
+      const storedWithdrawals = localStorage.getItem('withdrawals')
+      if (storedWithdrawals) {
+        setWithdrawals(JSON.parse(storedWithdrawals))
+      }
+
+      // Get payments
+      const storedPayments = localStorage.getItem('payments')
+      if (storedPayments) {
+        setPayments(JSON.parse(storedPayments))
+      }
+
+      // Handle last payment ID
+      const lastId = localStorage.getItem('lastPaymentId')
+      if (lastId) {
+        setLastPaymentId(lastId)
+        localStorage.removeItem('lastPaymentId')
+        toast.success("Payment submitted! We're processing your request.", {
+          duration: 5000,
+          icon: '🎉'
+        })
+      }
+
+      // Initialize or get existing referral code
+      let code = localStorage.getItem('myReferralCode')
+      if (!code) {
+        code = generateReferralCode()
+        localStorage.setItem('myReferralCode', code)
+        const storedCodes = JSON.parse(localStorage.getItem('referralCodes') || '[]')
+        storedCodes.push(code)
+        localStorage.setItem('referralCodes', JSON.stringify(storedCodes))
+      }
+
+      setReferralData(prev => ({
+        ...prev,
+        myReferralCode: code,
+        code: code
+      }))
     }
-    fetchData()
+
+    // Initial data fetch
+    fetchDashboardData()
+    setIsLoading(false)
+
+    // Storage event handler
+    const handleStorageChange = () => {
+      fetchDashboardData()
+    }
 
     // Set up storage event listener
-    window.addEventListener('storage', () => {
-      const code = localStorage.getItem('myReferralCode');
-      setReferralData(prev => ({
-        ...prev,
-        myReferralCode: code,
-        code: code
-      }));
-    });
-    return () => window.removeEventListener('storage', () => {
-      const code = localStorage.getItem('myReferralCode');
-      setReferralData(prev => ({
-        ...prev,
-        myReferralCode: code,
-        code: code
-      }));
-    });
-  }, [router])
+    window.addEventListener('storage', handleStorageChange)
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+    }
+  }, [router]) // router is the only external dependency needed
 
   const handleWithdrawSubmit = async () => {
     if (!withdrawAmount || parseFloat(withdrawAmount) <= 0) {

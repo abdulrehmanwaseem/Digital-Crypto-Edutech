@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
+import { DEFAULT_LOGIN_REDIRECT } from "@/routes"
 import { Eye, EyeOff, Loader2 } from "lucide-react"
 import { signIn } from "next-auth/react"
 import Link from "next/link"
@@ -29,7 +30,7 @@ function LoginContent() {
     password: "",
   })
 
-  const redirectTo = searchParams.get('redirect') || '/dashboard'
+  const redirectTo = searchParams.get('redirect') || DEFAULT_LOGIN_REDIRECT
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
