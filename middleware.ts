@@ -9,6 +9,9 @@ export default auth((req) => {
   const isPublicRoute = publicRoutes.includes(nextUrl.pathname);
   const isAuthRoute = authRoutes.includes(nextUrl.pathname);
 
+  if (nextUrl.pathname.startsWith('/images/')) {
+    return 
+  }
   // API routes should be handled separately
   if (nextUrl.pathname.startsWith("/api")) {
     return NextResponse.next();

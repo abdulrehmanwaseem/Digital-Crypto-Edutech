@@ -55,10 +55,6 @@ export function SiteHeader({session}) {
     router.refresh()
   }
 
-  
-
-
-
   // Don't render navigation until mounted to prevent flashing
   if (!mounted) {
     return (

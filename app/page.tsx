@@ -220,7 +220,7 @@ export default function Home() {
                     currentSlide === index && "scale-105"
                   )}
                   priority={index === 0}
-                  onLoadingComplete={() => setIsLoading(false)}
+                  onLoad={() => setIsLoading(false)}
                   onError={() => setIsLoading(false)}
 
                 />
