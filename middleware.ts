@@ -1,7 +1,6 @@
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
-import { authRoutes, publicRoutes } from "./routes";
-
+import { authRoutes, publicRoutes, DEFAULT_LOGIN_REDIRECT } from "./routes";
 
 export default auth((req) => {
   const { nextUrl, auth } = req;
@@ -10,8 +9,9 @@ export default auth((req) => {
   const isAuthRoute = authRoutes.includes(nextUrl.pathname);
 
   if (nextUrl.pathname.startsWith('/images/')) {
-    return 
+    return NextResponse.next();
   }
+  
   // API routes should be handled separately
   if (nextUrl.pathname.startsWith("/api")) {
     return NextResponse.next();
@@ -20,7 +20,7 @@ export default auth((req) => {
   // Auth routes (login, register, error)
   if (isAuthRoute) {
     if (isLoggedIn) {
-      return Response.redirect(new URL("/", nextUrl));
+      return Response.redirect(new URL(DEFAULT_LOGIN_REDIRECT, nextUrl));
     }
     return NextResponse.next();
   }
