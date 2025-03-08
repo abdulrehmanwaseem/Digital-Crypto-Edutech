@@ -1,81 +1,81 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { useToast } from "@/hooks/use-toast";
-import {
-  Bell,
-  Mail,
-  Shield,
-  Eye,
-  EyeOff,
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Switch } from "@/components/ui/switch"
+import { useToast } from "@/hooks/use-toast"
+import { 
+  Bell, 
+  Mail, 
+  Shield, 
+  Eye, 
+  EyeOff, 
   Loader2,
   Smartphone,
   Globe,
   Lock,
   KeyRound,
-  AlertTriangle,
-} from "lucide-react";
+  AlertTriangle
+} from "lucide-react"
 
 export default function SettingsPage() {
-  const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const { toast } = useToast()
+  const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const [notifications, setNotifications] = useState({
     email: true,
     push: true,
     marketing: false,
     trading: true,
     security: true,
-    updates: false,
-  });
+    updates: false
+  })
   const [security, setFormData] = useState({
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
-  });
+  })
 
   const handleNotificationChange = (key: keyof typeof notifications) => {
     setNotifications((prev) => ({
       ...prev,
       [key]: !prev[key],
-    }));
-  };
+    }))
+  }
 
   const handleSecurityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+  }
 
   const handlePasswordUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
+    e.preventDefault()
+    setLoading(true)
+    
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
       toast({
         title: "Password Updated",
         description: "Your password has been successfully updated.",
-      });
+      })
       setFormData({
         currentPassword: "",
         newPassword: "",
         confirmPassword: "",
-      });
+      })
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to update password. Please try again.",
         variant: "destructive",
-      });
+      })
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -141,9 +141,7 @@ export default function SettingsPage() {
                   </div>
                   <Switch
                     checked={notifications.marketing}
-                    onCheckedChange={() =>
-                      handleNotificationChange("marketing")
-                    }
+                    onCheckedChange={() => handleNotificationChange("marketing")}
                   />
                 </div>
 
@@ -174,10 +172,7 @@ export default function SettingsPage() {
 
               <form onSubmit={handlePasswordUpdate} className="space-y-6">
                 <div className="space-y-2">
-                  <label
-                    htmlFor="currentPassword"
-                    className="flex items-center gap-2 text-sm font-medium"
-                  >
+                  <label htmlFor="currentPassword" className="flex items-center gap-2 text-sm font-medium">
                     <Lock className="h-4 w-4 text-muted-foreground" />
                     Current Password
                   </label>
@@ -208,10 +203,7 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label
-                    htmlFor="newPassword"
-                    className="flex items-center gap-2 text-sm font-medium"
-                  >
+                  <label htmlFor="newPassword" className="flex items-center gap-2 text-sm font-medium">
                     <KeyRound className="h-4 w-4 text-muted-foreground" />
                     New Password
                   </label>
@@ -242,10 +234,7 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label
-                    htmlFor="confirmPassword"
-                    className="flex items-center gap-2 text-sm font-medium"
-                  >
+                  <label htmlFor="confirmPassword" className="flex items-center gap-2 text-sm font-medium">
                     <KeyRound className="h-4 w-4 text-muted-foreground" />
                     Confirm New Password
                   </label>
@@ -290,8 +279,7 @@ export default function SettingsPage() {
               <div className="mt-6 rounded-lg bg-destructive/10 p-4 text-destructive">
                 <h3 className="mb-2 font-semibold">Danger Zone</h3>
                 <p className="mb-4 text-sm">
-                  Once you delete your account, there is no going back. Please
-                  be certain.
+                  Once you delete your account, there is no going back. Please be certain.
                 </p>
                 <Button variant="destructive" size="sm">
                   Delete Account
@@ -302,5 +290,5 @@ export default function SettingsPage() {
         </div>
       </main>
     </div>
-  );
+  )
 }

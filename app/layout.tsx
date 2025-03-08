@@ -5,7 +5,9 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/toaster"
 import { ToastProvider } from "@radix-ui/react-toast";
 import { Footer } from "@/components/footer";
-import { HeaderWrapper } from "@/components/header-wrapper";
+import { SessionProvider } from "next-auth/react"
+import { SiteHeader } from '@/components/site-header';
+import { currentUser } from '@/lib/utils';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -20,29 +22,34 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const user = await currentUser();
+  
+  console.log(user)
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          suppressHydrationWarning
-        >
-          <ToastProvider swipeDirection="right">
-            <HeaderWrapper />
-            <main className="min-h-screen">
-              {children}
-            </main>
-            <Footer />
-          </ToastProvider>
-          <Toaster />
-        </ThemeProvider>
+        <SessionProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            suppressHydrationWarning
+          >
+            <ToastProvider swipeDirection="right">
+              <SiteHeader session={user} />
+              <main className="min-h-screen">
+                {children}
+              </main>
+              <Footer />
+            </ToastProvider>
+            <Toaster />
+          </ThemeProvider>
+        </SessionProvider>
       </body>
     </html>
   );

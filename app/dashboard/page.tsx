@@ -18,7 +18,8 @@ import {
   Wallet,
   ArrowDownToLine,
   UserCheck,
-  DollarSign
+  DollarSign,
+  CircleArrowLeft
 } from "lucide-react"
 import {
   LineChart,
@@ -549,12 +550,16 @@ const DashboardPage = () => {
     <div className="container mx-auto py-8 px-4">
       <div className="mb-8">
         <h1 className="mb-2 text-3xl font-bold">Welcome back, {userName}!</h1>
-        <div className="flex items-center gap-2">
+        <div className="flex justify-between items-center">
+       <div className="space-x-2">
           <span className="text-muted-foreground">Active Plan:</span>
           <span className="inline-flex items-center rounded-full bg-gradient-to-r from-blue-500 to-purple-500 px-4 py-1.5 text-sm font-medium text-white shadow-sm">
             {selectedPlan?.name || "No Plan Selected"}
           </span>
+          </div>
+           <h1 className="text-2xl font-bold flex items-center gap-2 cursor-pointer" onClick={() => router.push('/')}><CircleArrowLeft size={25} /> Go Back</h1>
         </div>
+
       </div>
 
       {/* Active Plan Card */}

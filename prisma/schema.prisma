@@ -1,16 +1,11 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum Role {
@@ -26,26 +21,62 @@ enum EnrollmentStatus {
 
 model User {
   id            String    @id @default(cuid())
-  name          String
+  fullName      String
   email         String    @unique
-  password      String
+  occupation    String
+  password      String?
+  emailVerified DateTime? 
   role          Role      @default(USER)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   referralCode  String?   @unique
   referredBy    String?
+  accounts      Account[]
+  sessions      Session[]
   enrollments   Enrollment[]
   profile       Profile?
   referralStats ReferralStats?
 }
 
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String  @map("user_id")
+  type               String
+  provider           String
+  providerAccountId  String  @map("provider_account_id")
+  refresh_token      String? @db.Text
+  access_token       String? @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String? @db.Text
+  session_state      String?
+ 
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+ 
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+ 
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+ 
+  @@map("sessions")
+}
+
 model Profile {
   id          String    @id @default(cuid())
   userId      String    @unique
-  user        User      @relation(fields: [userId], references: [id])
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio         String?   @db.Text
+  location    String?
   avatar      String?
-  bio         String?
-  phoneNumber String?
+  achievements Json?
+  activities   Json?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
@@ -53,10 +84,11 @@ model Profile {
 model Plan {
   id          String    @id @default(cuid())
   name        String
-  description String
+  description String    @db.Text
   price       Float
   duration    Int       // in days
   features    String[]
+  isActive    Boolean   @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   enrollments Enrollment[]
@@ -66,10 +98,11 @@ model Plan {
 model Course {
   id          String    @id @default(cuid())
   title       String
-  description String
-  content     String
+  description String    @db.Text
+  content     String    @db.Text
   planId      String
   plan        Plan      @relation(fields: [planId], references: [id])
+  isPublished Boolean   @default(false)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
@@ -78,7 +111,7 @@ model Enrollment {
   id        String    @id @default(cuid())
   userId    String
   planId    String
-  user      User      @relation(fields: [userId], references: [id])
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   plan      Plan      @relation(fields: [planId], references: [id])
   startDate DateTime  @default(now())
   endDate   DateTime
@@ -90,9 +123,10 @@ model Enrollment {
 model ReferralStats {
   id             String   @id @default(cuid())
   userId         String   @unique
-  user           User     @relation(fields: [userId], references: [id])
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   totalReferrals Int     @default(0)
   activeReferrals Int    @default(0)
+  earnings       Float   @default(0)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }
@@ -102,6 +136,7 @@ model ContactMessage {
   name      String
   email     String
   subject   String
-  message   String
-  createdAt DateTime  @default(now())
+  message   String    @db.Text
+  status    String    @default("pending")
+  createdAt DateTime  @default(now()) 
 }

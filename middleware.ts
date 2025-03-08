@@ -1,73 +1,59 @@
+import { auth } from "@/auth";
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { verify } from 'jsonwebtoken';
-import { Role } from '@prisma/client';
+import { authRoutes, publicRoutes } from "./routes";
 
-// Define protected routes and their required roles
-const PROTECTED_ROUTES: Record<string, Role[]> = {
-  '/admin': [Role.ADMIN],
-  '/dashboard': [Role.USER, Role.ADMIN],
-  '/api/admin': [Role.ADMIN],
-  '/api/courses/manage': [Role.ADMIN]
-};
 
-interface JWTPayload {
-  role: Role;
-  [key: string]: any;
-}
+export default auth((req) => {
+  const { nextUrl, auth } = req;
+  const isLoggedIn = !!auth;
+  const isPublicRoute = publicRoutes.includes(nextUrl.pathname);
+  const isAuthRoute = authRoutes.includes(nextUrl.pathname);
 
-export function middleware(request: NextRequest) {
-  const token = request.cookies.get("token");
-  const { pathname } = request.nextUrl;
-  
-  // Check if path is protected
-  const isProtected = Object.keys(PROTECTED_ROUTES).some(route => 
-    pathname.startsWith(route)
-  );
+  // API routes should be handled separately
+  if (nextUrl.pathname.startsWith("/api")) {
+    return NextResponse.next();
+  }
 
-  // Allow public access to auth routes
-  if (pathname.startsWith("/auth")) {
-    if (token) {
-      // If user is already logged in, redirect to home
-      return NextResponse.redirect(new URL("/", request.url));
+  // Auth routes (login, register, error)
+  if (isAuthRoute) {
+    if (isLoggedIn) {
+      return Response.redirect(new URL("/", nextUrl));
     }
     return NextResponse.next();
   }
 
-  // Handle protected routes
-  if (isProtected) {
-    if (!token) {
-      return NextResponse.redirect(new URL("/auth/login", request.url));
+  // Public routes
+  if (isPublicRoute) {
+    return NextResponse.next();
+  }
+
+  // Protected routes
+  if (!isLoggedIn) {
+    let callbackUrl = nextUrl.pathname;
+    if (nextUrl.search) {
+      callbackUrl += nextUrl.search;
     }
 
-    try {
-      const decoded = verify(token.value, process.env.JWT_SECRET || 'your-secret-key') as JWTPayload;
-      
-      // Check if user has required role for this route
-      const requiredRoles = Object.entries(PROTECTED_ROUTES).find(([route]) => 
-        pathname.startsWith(route)
-      )?.[1];
-
-      if (requiredRoles && !requiredRoles.includes(decoded.role)) {
-        return NextResponse.redirect(new URL("/", request.url));
-      }
-
-      return NextResponse.next();
-    } catch (error) {
-      // Invalid token
-      return NextResponse.redirect(new URL("/auth/login", request.url));
-    }
+    const encodedCallbackUrl = encodeURIComponent(callbackUrl);
+    return Response.redirect(new URL(
+      `/login?redirect=${encodedCallbackUrl}`,
+      nextUrl
+    ));
   }
 
   return NextResponse.next();
-}
+});
 
+// Optionally configure Edge Runtime
 export const config = {
   matcher: [
-    '/admin/:path*',
-    '/dashboard/:path*',
-    '/auth/:path*',
-    '/api/admin/:path*',
-    '/api/courses/manage/:path*'
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public (public files)
+     */
+    "/((?!_next/static|_next/image|favicon.ico|public).*)",
   ],
-};
+}
