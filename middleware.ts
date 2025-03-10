@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 import { authRoutes, publicRoutes, DEFAULT_LOGIN_REDIRECT } from "./routes";
+import { Role } from "@prisma/client";
 
 export default auth((req) => {
   const { nextUrl, auth } = req;
@@ -30,6 +31,7 @@ export default auth((req) => {
     return NextResponse.next();
   }
 
+
   // Protected routes
   if (!isLoggedIn) {
     let callbackUrl = nextUrl.pathname;
@@ -42,6 +44,14 @@ export default auth((req) => {
       `/login?redirect=${encodedCallbackUrl}`,
       nextUrl
     ));
+  }
+
+  // Admin routes
+  if (nextUrl.pathname.startsWith('/admin')) {
+    if (auth?.user?.role !== Role.ADMIN) {
+      return Response.redirect(new URL('/dashboard', nextUrl));
+    }
+    return NextResponse.next();
   }
 
   return NextResponse.next();

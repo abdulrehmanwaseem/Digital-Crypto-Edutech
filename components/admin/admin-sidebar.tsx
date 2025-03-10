@@ -34,11 +34,6 @@ const adminRoutes = [
     icon: DollarSign,
   },
   {
-    href: "/admin/content",
-    label: "Content",
-    icon: FileText,
-  },
-  {
     href: "/admin/settings",
     label: "Settings",
     icon: Settings,

@@ -1,24 +1,22 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
-  Users,
+  AlertCircle,
   BookOpen,
   DollarSign,
-  TrendingUp,
-  Users2,
-  AlertCircle,
-  Activity
+  Users,
+  Users2
 } from "lucide-react"
+import { useEffect, useState } from "react"
 import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
   CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
   Tooltip,
-  ResponsiveContainer
+  XAxis,
+  YAxis
 } from "recharts"
 import { toast } from "sonner"
 
