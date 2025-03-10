@@ -26,7 +26,7 @@ function RegisterContent() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [formData, setFormData] = useState({
-    fullName: "",
+    name: "",
     email: "",
     occupation: "",
     password: "",
@@ -73,7 +73,7 @@ function RegisterContent() {
         body: JSON.stringify({
           email: formData.email,
           password: formData.password,
-          fullName: formData.fullName,
+          name: formData.name,
           occupation: formData.occupation,
           referralCode
         }),
@@ -164,12 +164,12 @@ function RegisterContent() {
             <form onSubmit={handleSubmit}>
               <div className="grid gap-6">
                 <div className="grid gap-2">
-                  <label className="text-sm font-medium" htmlFor="fullName">Full Name</label>
+                  <label className="text-sm font-medium" htmlFor="name">Full Name</label>
                   <Input
-                    id="fullName"
-                    name="fullName"
+                    id="name"
+                    name="name"
                     type="text"
-                    value={formData.fullName}
+                    value={formData.name}
                     onChange={handleChange}
                     required
                     disabled={loading}

@@ -5,7 +5,7 @@ import { generateReferralCode } from "@/lib/utils";
 export type CreateUserData = {
   email: string;
   password: string;
-  fullName: string;
+  name: string;
   occupation: string;
   referredBy?: string;
 };

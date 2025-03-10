@@ -9,7 +9,7 @@ export async function authenticateUser(email: string, password: string) {
         id: true,
         email: true,
         password: true,
-        fullName: true,
+        name: true,
         role: true,
         occupation: true,
         referralCode: true,
@@ -28,7 +28,7 @@ export async function authenticateUser(email: string, password: string) {
     return {
       id: user.id,
       email: user.email,
-      name: user.fullName,
+      name: user.name,
       role: user.role,
       occupation: user.occupation,
       referralCode: user.referralCode || undefined,

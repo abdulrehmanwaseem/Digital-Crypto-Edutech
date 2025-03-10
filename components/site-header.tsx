@@ -30,6 +30,7 @@ const navigationItems = [
 
 const authenticatedItems = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
+  { href: "/plans", label: "Plans", icon: Wallet2 },
   { href: "/profile", label: "Profile", icon: Users },
   { href: "/settings", label: "Settings", icon: BookOpen },
 ]
@@ -51,8 +52,10 @@ export function SiteHeader({session}) {
   }, [])
 
   const handleLogout = async () => {
-    await signOut({ redirect: false })
-    router.refresh()
+    await signOut({ 
+      redirect: true,
+      callbackUrl: '/'
+    })
   }
 
   // Don't render navigation until mounted to prevent flashing
@@ -94,9 +97,10 @@ export function SiteHeader({session}) {
   // Only show navigation items appropriate for the current auth state
   const items = session  ? authenticatedItems : navigationItems
 
-  const userInitials = session?.user?.name
+  const userInitials = session?.name
     ? session.name.split(" ").map(n => n[0]).join("").toUpperCase()
     : "U"
+
 
   return (
     <header className={cn(
@@ -187,7 +191,7 @@ export function SiteHeader({session}) {
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src={session?.image || ""} alt={session?.name || ""} />
+                        <AvatarImage src={session?.profile?.avatar || ""} alt={session?.name || ""} />
                         <AvatarFallback>{userInitials}</AvatarFallback>
                       </Avatar>
                     </Button>

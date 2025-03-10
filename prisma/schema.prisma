@@ -3,9 +3,143 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  password      String?
+  role          Role      @default(USER)
+  occupation    String    @default("Not specified")
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  referralCode  String?   @unique
+  referredBy    String?
+
+  accounts      Account[]
+  sessions      Session[]
+  enrollments   Enrollment[]
+  profile       Profile?
+  referralStats ReferralStats?
+  payments      Payment[]
+
+  @@index([email])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Profile {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  bio          String?  @default("Not specified")
+  location     String?  @default("Not specified")
+  avatar       String?  @default("")
+  twitter      String?  @default("")
+  telegram     String?  @default("")
+  website      String?  @default("")
+  achievements Json?    @default("[]")
+  activities   Json?    @default("[]")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Course {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  imageUrl    String
+  price       Float
+  published   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  enrollments Enrollment[]
+  payments    Payment[]
+
+  @@index([title])
+}
+
+model Enrollment {
+  id        String   @id @default(cuid())
+  userId    String
+  courseId  String
+  status    EnrollmentStatus @default(PENDING)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  userId        String
+  courseId      String
+  amount        Float
+  currency      String        @default("USD")
+  status        PaymentStatus @default(PENDING)
+  proofImageUrl String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([courseId])
+  @@index([status])
+}
+
+model ReferralStats {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  totalReferrals Int      @default(0)
+  activeReferrals Int     @default(0)
+  earnings       Float    @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 enum Role {
@@ -13,130 +147,15 @@ enum Role {
   ADMIN
 }
 
+enum PaymentStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
 enum EnrollmentStatus {
+  PENDING
   ACTIVE
   COMPLETED
   CANCELLED
-}
-
-model User {
-  id            String    @id @default(cuid())
-  fullName      String
-  email         String    @unique
-  occupation    String
-  password      String?
-  emailVerified DateTime? 
-  role          Role      @default(USER)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  referralCode  String?   @unique
-  referredBy    String?
-  accounts      Account[]
-  sessions      Session[]
-  enrollments   Enrollment[]
-  profile       Profile?
-  referralStats ReferralStats?
-}
-
-model Account {
-  id                 String  @id @default(cuid())
-  userId             String  @map("user_id")
-  type               String
-  provider           String
-  providerAccountId  String  @map("provider_account_id")
-  refresh_token      String? @db.Text
-  access_token       String? @db.Text
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String? @db.Text
-  session_state      String?
- 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
- 
-  @@unique([provider, providerAccountId])
-  @@map("accounts")
-}
- 
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique @map("session_token")
-  userId       String   @map("user_id")
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
- 
-  @@map("sessions")
-}
-
-model Profile {
-  id          String    @id @default(cuid())
-  userId      String    @unique
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bio         String?   @db.Text
-  location    String?
-  avatar      String?
-  achievements Json?
-  activities   Json?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-}
-
-model Plan {
-  id          String    @id @default(cuid())
-  name        String
-  description String    @db.Text
-  price       Float
-  duration    Int       // in days
-  features    String[]
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  enrollments Enrollment[]
-  courses     Course[]
-}
-
-model Course {
-  id          String    @id @default(cuid())
-  title       String
-  description String    @db.Text
-  content     String    @db.Text
-  planId      String
-  plan        Plan      @relation(fields: [planId], references: [id])
-  isPublished Boolean   @default(false)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-}
-
-model Enrollment {
-  id        String    @id @default(cuid())
-  userId    String
-  planId    String
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  plan      Plan      @relation(fields: [planId], references: [id])
-  startDate DateTime  @default(now())
-  endDate   DateTime
-  status    EnrollmentStatus @default(ACTIVE)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-}
-
-model ReferralStats {
-  id             String   @id @default(cuid())
-  userId         String   @unique
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  totalReferrals Int     @default(0)
-  activeReferrals Int    @default(0)
-  earnings       Float   @default(0)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-}
-
-model ContactMessage {
-  id        String    @id @default(cuid())
-  name      String
-  email     String
-  subject   String
-  message   String    @db.Text
-  status    String    @default("pending")
-  createdAt DateTime  @default(now()) 
 }

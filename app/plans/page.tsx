@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Check, Crown, Star } from "lucide-react"
 import { Input } from "@/components/ui/input"
-import toast from 'react-hot-toast';
+import { useToast } from "@/hooks/use-toast"
 
 interface Plan {
   name: string;
@@ -189,17 +189,20 @@ const plans: PlanWithReferral[] = [
 
 export default function PlansPage() {
   const router = useRouter()
+  const { toast } = useToast()
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
   const [referralCode, setReferralCode] = useState('')
   const [referralStatus, setReferralStatus] = useState<'idle' | 'valid' | 'invalid'>('idle')
   const [isValidating, setIsValidating] = useState(false)
   const [discountedPlans, setDiscountedPlans] = useState(plans)
+  const [referralData, setReferralData] = useState<{ referrerId: string } | null>(null)
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const refCode = urlParams.get('ref');
     if (refCode) {
-      localStorage.setItem('referredBy', refCode);
+      setReferralCode(refCode);
+      validateReferralCode(refCode);
     }
   }, []);
 
@@ -230,70 +233,49 @@ export default function PlansPage() {
     if (!code) return;
     setIsValidating(true);
     try {
-      // Get all stored referral codes from localStorage
-      const storedCodes = JSON.parse(localStorage.getItem('referralCodes') || '[]');
-      
-      if (storedCodes.includes(code)) {
-        setReferralStatus('valid');
-        localStorage.setItem('appliedReferralCode', code);
-        toast.success('Referral code applied successfully!');
-      } else {
-        setReferralStatus('invalid');
-        toast.error('Invalid referral code');
+      const response = await fetch("/api/referral/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to validate referral code");
       }
+
+      setReferralStatus('valid');
+      setReferralData({ referrerId: data.referrerId });
+      toast({
+        title: "Success",
+        description: "Referral code applied successfully!",
+      });
     } catch (error) {
       console.error('Error validating referral code:', error);
       setReferralStatus('invalid');
-      toast.error('Error validating referral code');
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to validate referral code",
+        variant: "destructive",
+      });
     } finally {
       setIsValidating(false);
     }
   };
 
   const handlePlanSelection = async (plan: PlanWithReferral) => {
-    // Get the referral code the user registered with
-    const usedReferralCode = localStorage.getItem("usedReferralCode");
-    
-    if (usedReferralCode) {
-      // Apply discount to the plan
-      const discount = plan.price * 0.10; // 10% discount for referred users
-      const discountedPrice = plan.price - discount;
+    const selectedPlanData = {
+      ...plan,
+      referralCode: referralStatus === 'valid' ? referralCode : null,
+      referrerId: referralData?.referrerId
+    };
 
-      // Update the referrer's dashboard with purchase info
-      const referredUsers = JSON.parse(localStorage.getItem(`referredUsers_${usedReferralCode}`) || '[]');
-      const userData = JSON.parse(localStorage.getItem("userData") || '{}');
-      
-      // Find and update the user's purchase info
-      const userIndex = referredUsers.findIndex((u: any) => u.name === userData.name);
-      if (userIndex !== -1) {
-        referredUsers[userIndex] = {
-          ...referredUsers[userIndex],
-          plan: plan.name,
-          discount: discount,
-          status: 'active'
-        };
-        localStorage.setItem(`referredUsers_${usedReferralCode}`, JSON.stringify(referredUsers));
-
-        // Update referrer's earnings
-        const currentEarnings = parseFloat(localStorage.getItem(`referralEarnings_${usedReferralCode}`) || '0');
-        const newEarnings = currentEarnings + (discount * 0.5); // Referrer gets 50% of the discount as earnings
-        localStorage.setItem(`referralEarnings_${usedReferralCode}`, newEarnings.toString());
-      }
-
-      // Store the discounted plan details
-      localStorage.setItem("selectedPlan", JSON.stringify({
-        ...plan,
-        originalPrice: plan.price,
-        price: discountedPrice,
-        discountApplied: discount
-      }));
-    } else {
-      // No referral code, store original plan details
-      localStorage.setItem("selectedPlan", JSON.stringify(plan));
-    }
+    // Store selected plan data in session storage (will be cleared after payment/browser close)
+    sessionStorage.setItem("selectedPlan", JSON.stringify(selectedPlanData));
 
     // Redirect to payment or registration
-    const token = localStorage.getItem("token");
+    const token = sessionStorage.getItem("token");
     if (!token) {
       router.push("/register?redirect=/payment");
     } else {

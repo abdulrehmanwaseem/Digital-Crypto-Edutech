@@ -37,6 +37,8 @@ export default function SettingsPage() {
     newPassword: "",
     confirmPassword: "",
   })
+  const [deleteAccountPassword, setDeleteAccountPassword] = useState("")
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
 
   const handleNotificationChange = (key: keyof typeof notifications) => {
     setNotifications((prev) => ({
@@ -55,7 +57,17 @@ export default function SettingsPage() {
     setLoading(true)
     
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const response = await fetch("/api/settings/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(security),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to update password")
+      }
       
       toast({
         title: "Password Updated",
@@ -69,10 +81,44 @@ export default function SettingsPage() {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to update password. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to update password. Please try again.",
         variant: "destructive",
       })
     } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    if (!deleteAccountPassword) {
+      toast({
+        title: "Error",
+        description: "Please enter your password to confirm account deletion",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setLoading(true)
+    try {
+      const response = await fetch("/api/settings/delete-account", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: deleteAccountPassword }),
+      })
+
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to delete account")
+      }
+
+      window.location.href = "/register"
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to delete account. Please try again.",
+        variant: "destructive",
+      })
       setLoading(false)
     }
   }
@@ -217,26 +263,13 @@ export default function SettingsPage() {
                       required
                       className="pr-10"
                     />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-0 top-0"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                    </Button>
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <label htmlFor="confirmPassword" className="flex items-center gap-2 text-sm font-medium">
                     <KeyRound className="h-4 w-4 text-muted-foreground" />
-                    Confirm New Password
+                    Confirm Password
                   </label>
                   <div className="relative">
                     <Input
@@ -248,27 +281,14 @@ export default function SettingsPage() {
                       required
                       className="pr-10"
                     />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-0 top-0"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                    </Button>
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button type="submit" disabled={loading} className="w-full">
                   {loading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Updating password...
+                      Updating Password...
                     </>
                   ) : (
                     "Update Password"
@@ -276,14 +296,63 @@ export default function SettingsPage() {
                 </Button>
               </form>
 
-              <div className="mt-6 rounded-lg bg-destructive/10 p-4 text-destructive">
-                <h3 className="mb-2 font-semibold">Danger Zone</h3>
-                <p className="mb-4 text-sm">
+              <div className="mt-8 border-t pt-6">
+                <h3 className="mb-4 text-lg font-semibold text-destructive">Danger Zone</h3>
+                <p className="mb-4 text-sm text-muted-foreground">
                   Once you delete your account, there is no going back. Please be certain.
                 </p>
-                <Button variant="destructive" size="sm">
-                  Delete Account
-                </Button>
+                {showDeleteModal ? (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label htmlFor="deletePassword" className="text-sm font-medium">
+                        Enter your password to confirm
+                      </label>
+                      <Input
+                        id="deletePassword"
+                        type="password"
+                        value={deleteAccountPassword}
+                        onChange={(e) => setDeleteAccountPassword(e.target.value)}
+                        placeholder="Enter your password"
+                        required
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="destructive" 
+                        onClick={handleDeleteAccount}
+                        disabled={loading || !deleteAccountPassword}
+                        className="flex-1"
+                      >
+                        {loading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Deleting Account...
+                          </>
+                        ) : (
+                          "Confirm Delete"
+                        )}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setShowDeleteModal(false)
+                          setDeleteAccountPassword("")
+                        }}
+                        disabled={loading}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Button 
+                    variant="destructive" 
+                    onClick={() => setShowDeleteModal(true)}
+                    className="w-full"
+                  >
+                    Delete Account
+                  </Button>
+                )}
               </div>
             </Card>
           </div>

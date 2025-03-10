@@ -4,6 +4,17 @@ import { RegisterSchema } from "@/schemas/auth";
 import { prisma } from "@/lib/prisma";
 import { generateReferralCode } from "@/lib/utils";
 
+const defaultProfile = {
+  bio: "Not specified",
+  location: "Not specified",
+  avatar: "",
+  twitter: "",
+  telegram: "",
+  website: "",
+  achievements: JSON.stringify([]),
+  activities: JSON.stringify([])
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -16,7 +27,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { email, password, fullName, occupation, referralCode } = validatedFields.data;
+    const { email, password, name, occupation, referralCode } = validatedFields.data;
     
     const existingUser = await prisma.user.findUnique({
       where: { email },
@@ -59,36 +70,41 @@ export async function POST(req: Request) {
       data: {
         email,
         password: hashedPassword,
-        fullName,
+        name,
         occupation,
         referralCode: newReferralCode,
         referredBy,
         profile: {
           create: {
-            bio: "",
-            location: "",
-            avatar: "",
-            achievements: [],
-            activities: [],
+            ...defaultProfile
           }
         },
         referralStats: {
           create: {
             totalReferrals: 0,
             activeReferrals: 0,
+            earnings: 0
           }
         }
       },
+      include: {
+        profile: true
+      }
     });
 
     return NextResponse.json({ 
       user: {
         id: user.id,
         email: user.email,
-        fullName: user.fullName,
+        name: user.name,
         occupation: user.occupation,
         role: user.role,
         referralCode: user.referralCode,
+        profile: {
+          ...user.profile,
+          achievements: user.profile?.achievements ? JSON.parse(user.profile.achievements as string) : [],
+          activities: user.profile?.activities ? JSON.parse(user.profile.activities as string) : []
+        }
       }
     }, { status: 201 });
   } catch (error) {

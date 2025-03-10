@@ -1,13 +1,14 @@
-"use client"
+  "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { useToast } from "@/hooks/use-toast"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { fetchProfile, updateProfile, type UserProfile } from "@/services/profile"
+import { showToast } from "@/lib/toast"
 import { 
   Camera, 
   Loader2, 
@@ -23,54 +24,137 @@ import {
   Globe,
   Briefcase
 } from "lucide-react"
+import { CloudinaryUploadWidget } from "@/components/cloudinary-upload-widget"
 
-const achievements = [
-  { title: "Course Completion", value: "8", label: "Courses" },
-  { title: "Trading Hours", value: "120", label: "Hours" },
-  { title: "Success Rate", value: "92%", label: "Win Rate" }
-]
-
-const activities = [
-  { 
-    type: "course",
-    title: "Completed Technical Analysis",
-    time: "2 hours ago",
-    icon: Briefcase
-  },
-  {
-    type: "achievement",
-    title: "Earned Advanced Trader Badge",
-    time: "1 day ago",
-    icon: Shield
-  },
-  {
-    type: "social",
-    title: "Joined Crypto Trading Group",
-    time: "2 days ago",
-    icon: Users
+type FormData = {
+  name: string
+  email: string
+  occupation: string
+  profile: {
+    bio: string
+    location: string
+    twitter: string
+    telegram: string
+    website: string
   }
-]
+}
+
+const defaultProfile: UserProfile = {
+  id: "",
+  name: "",
+  email: "",
+  role: "USER",
+  occupation: "",
+  referralCode: "",
+  profile: {
+    avatar: "",
+    bio: "",
+    location: "",
+    twitter: "",
+    telegram: "",
+    website: "",
+    achievements: [],
+    activities: []
+  }
+}
 
 export default function ProfilePage() {
-  const { toast } = useToast()
   const [loading, setLoading] = useState(false)
+  const [avatarLoading, setAvatarLoading] = useState(false)
   const [activeTab, setActiveTab] = useState("general")
-  const [formData, setFormData] = useState({
-    fullName: "John Doe",
-    email: "john@example.com",
-    bio: "Crypto enthusiast and trader with 3+ years of experience. Passionate about blockchain technology and decentralized finance.",
-    location: "New York, USA",
-    twitter: "@johndoe",
-    telegram: "@johndoe_crypto",
-    website: "https://johndoe.com",
-    occupation: "Full-time Trader"
+  const [profile, setProfile] = useState<UserProfile>(defaultProfile)
+  const [formData, setFormData] = useState<FormData>({
+    name: "",
+    email: "",
+    occupation: "",
+    profile: {
+      bio: "",
+      location: "",
+      twitter: "",
+      telegram: "",
+      website: ""
+    }
   })
+
+  const getInitials = (name: string | undefined) => {
+    if (!name) return ""
+    return name.split(" ").map((n: string) => n[0]).join("").toUpperCase()
+  }
+
+  const handleAvatarUpload = async (url: string) => {
+    console.log(url)
+    try {
+      setAvatarLoading(true)
+      const response = await fetch("/api/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: profile.name,
+          occupation: profile.occupation,
+          profile: {
+            ...profile.profile,
+            avatar: url,
+          }
+        })
+      })
+
+      console.log(response)
+
+      if (!response.ok) {
+        throw new Error("Failed to update avatar")
+      }
+
+      const updatedProfile = await response.json()
+      setProfile(updatedProfile)
+      showToast.success("Avatar updated successfully")
+    } catch (error) {
+      console.error("Avatar Update Error:", error)
+      showToast.error("Failed to update avatar")
+    } finally {
+      setAvatarLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    async function loadProfile() {
+      try {
+        const data = await fetchProfile()
+        setProfile(data)
+        setFormData({
+          name: data.name,
+          email: data.email,
+          occupation: data.occupation,
+          profile: {
+            bio: data.profile.bio,
+            location: data.profile.location,
+            twitter: data.profile.twitter || "",
+            telegram: data.profile.telegram || "",
+            website: data.profile.website || ""
+          }
+        })
+      } catch (error) {
+        showToast.error("Failed to load profile data")
+      }
+    }
+    loadProfile()
+  }, [])
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    if (name.includes(".")) {
+      const [parent, child] = name.split(".")
+      setFormData((prev) => ({
+        ...prev,
+        [parent]: {
+          ...(prev[parent as keyof FormData] as Record<string, string>),
+          [child]: value
+        }
+      }))
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }))
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -78,21 +162,31 @@ export default function ProfilePage() {
     setLoading(true)
     
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      toast({
-        title: "Profile Updated",
-        description: "Your profile has been successfully updated.",
+      const updatedProfile = await updateProfile({
+        name: formData.name,
+        occupation: formData.occupation,
+        profile: {
+          ...formData.profile,
+          avatar: profile.profile.avatar,
+          achievements: profile.profile.achievements,
+          activities: profile.profile.activities
+        }
       })
+      setProfile(updatedProfile)
+      showToast.success("Your profile has been successfully updated")
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update profile. Please try again.",
-        variant: "destructive",
-      })
+      showToast.error(error instanceof Error ? error.message : "Failed to update profile")
     } finally {
       setLoading(false)
     }
+  }
+
+  if (!profile.id) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    )
   }
 
   return (
@@ -106,208 +200,232 @@ export default function ProfilePage() {
             </p>
           </div>
 
-          <div className="grid gap-8 lg:grid-cols-12">
-            {/* Profile Sidebar */}
-            <div className="lg:col-span-4">
-              <Card className="sticky top-24 p-6">
-                <div className="text-center">
-                  <div className="relative mx-auto mb-6 h-32 w-32">
-                    <Avatar className="h-32 w-32 ring-4 ring-primary/10">
-                      <AvatarImage src="/placeholder-avatar.jpg" alt="Profile" />
-                      <AvatarFallback>JD</AvatarFallback>
-                    </Avatar>
-                    <Button
-                      size="icon"
-                      variant="secondary"
-                      className="absolute bottom-0 right-0 rounded-full shadow-lg"
-                    >
-                      <Camera className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <h2 className="mb-1 text-2xl font-semibold">{formData.fullName}</h2>
-                  <p className="text-sm text-muted-foreground">{formData.email}</p>
-                </div>
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="mb-8">
+              <TabsTrigger value="general">
+                <User className="mr-2 h-4 w-4" />
+                General
+              </TabsTrigger>
+              <TabsTrigger value="security">
+                <Shield className="mr-2 h-4 w-4" />
+                Security
+              </TabsTrigger>
+              <TabsTrigger value="notifications">
+                <Bell className="mr-2 h-4 w-4" />
+                Notifications
+              </TabsTrigger>
+            </TabsList>
 
-                <div className="mt-6 grid grid-cols-3 gap-4 border-t pt-6">
-                  {achievements.map((achievement) => (
-                    <div key={achievement.title} className="text-center">
-                      <p className="text-2xl font-bold text-primary">{achievement.value}</p>
-                      <p className="text-xs text-muted-foreground">{achievement.label}</p>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-6 space-y-4 border-t pt-6">
-                  <h3 className="font-semibold">Recent Activity</h3>
-                  {activities.map((activity, index) => (
-                    <div key={index} className="flex items-start gap-3">
-                      <div className="rounded-lg bg-primary/10 p-2 text-primary">
-                        <activity.icon className="h-4 w-4" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">{activity.title}</p>
-                        <p className="text-xs text-muted-foreground">{activity.time}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            </div>
-
-            {/* Profile Form */}
-            <div className="lg:col-span-8">
+            <TabsContent value="general">
               <Card className="p-6">
-                <Tabs value={activeTab} onValueChange={setActiveTab}>
-                  <TabsList className="mb-6">
-                    <TabsTrigger value="general">General</TabsTrigger>
-                    <TabsTrigger value="social">Social</TabsTrigger>
-                    <TabsTrigger value="preferences">Preferences</TabsTrigger>
-                  </TabsList>
-
-                  <form onSubmit={handleSubmit}>
-                    <TabsContent value="general">
-                      <div className="space-y-6">
-                        <div className="grid gap-4 sm:grid-cols-2">
-                          <div className="space-y-2">
-                            <label htmlFor="fullName" className="text-sm font-medium">
-                              <User className="mb-1.5 h-4 w-4 text-muted-foreground" />
-                              Full Name
-                            </label>
-                            <Input
-                              id="fullName"
-                              name="fullName"
-                              value={formData.fullName}
-                              onChange={handleChange}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <label htmlFor="email" className="text-sm font-medium">
-                              <Mail className="mb-1.5 h-4 w-4 text-muted-foreground" />
-                              Email
-                            </label>
-                            <Input
-                              id="email"
-                              name="email"
-                              type="email"
-                              value={formData.email}
-                              onChange={handleChange}
-                              disabled
-                            />
-                          </div>
+                <form onSubmit={handleSubmit} className="space-y-8">
+                  <div className="space-y-6">
+                    <div className="flex flex-col items-center space-y-4">
+                      <div className="relative">
+                        <Avatar className="h-24 w-24">
+                          <AvatarImage
+                            src={profile.profile.avatar || "/placeholder-avatar.jpg"}
+                            alt={profile.name}
+                          />
+                          <AvatarFallback>
+                            {getInitials(profile.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="absolute -bottom-2 -right-2">
+                          <CloudinaryUploadWidget
+                            onUpload={handleAvatarUpload}
+                            options={{
+                              maxFiles: 1,
+                              sources: ["local", "camera"],
+                              resourceType: "image",
+                              folder: "crypto-lms/avatars",
+                            }}
+                          >
+                            {avatarLoading ? (
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                              <Camera className="mr-2 h-4 w-4" />
+                            )}
+                            {avatarLoading ? "Updating..." : "Update"}
+                          </CloudinaryUploadWidget>
                         </div>
+                      </div>
+                      <div className="text-center">
+                        <h2 className="text-xl font-semibold">{profile.name}</h2>
+                        <p className="text-sm text-muted-foreground">
+                          {profile.email}
+                        </p>
+                      </div>
+                    </div>
 
-                        <div className="space-y-2">
-                          <label htmlFor="bio" className="text-sm font-medium">
-                            Bio
-                          </label>
-                          <Textarea
-                            id="bio"
-                            name="bio"
-                            value={formData.bio}
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <label htmlFor="name" className="text-sm font-medium">
+                          Name
+                        </label>
+                        <div className="flex items-center space-x-2">
+                          <User className="h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="name"
+                            name="name"
+                            value={formData.name}
                             onChange={handleChange}
-                            rows={4}
+                            placeholder="Your name"
                           />
                         </div>
+                      </div>
 
-                        <div className="grid gap-4 sm:grid-cols-2">
-                          <div className="space-y-2">
-                            <label htmlFor="location" className="text-sm font-medium">
-                              <MapPin className="mb-1.5 h-4 w-4 text-muted-foreground" />
-                              Location
-                            </label>
-                            <Input
-                              id="location"
-                              name="location"
-                              value={formData.location}
-                              onChange={handleChange}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <label htmlFor="occupation" className="text-sm font-medium">
-                              <Briefcase className="mb-1.5 h-4 w-4 text-muted-foreground" />
-                              Occupation
-                            </label>
-                            <Input
-                              id="occupation"
-                              name="occupation"
-                              value={formData.occupation}
-                              onChange={handleChange}
-                            />
-                          </div>
+                      <div className="space-y-2">
+                        <label htmlFor="occupation" className="text-sm font-medium">
+                          Occupation
+                        </label>
+                        <div className="flex items-center space-x-2">
+                          <Briefcase className="h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="occupation"
+                            name="occupation"
+                            value={formData.occupation}
+                            onChange={handleChange}
+                            placeholder="Your occupation"
+                          />
                         </div>
                       </div>
-                    </TabsContent>
 
-                    <TabsContent value="social">
-                      <div className="space-y-6">
-                        <div className="grid gap-4 sm:grid-cols-2">
-                          <div className="space-y-2">
-                            <label htmlFor="twitter" className="text-sm font-medium">
-                              <Twitter className="mb-1.5 h-4 w-4 text-muted-foreground" />
-                              Twitter
-                            </label>
-                            <Input
-                              id="twitter"
-                              name="twitter"
-                              value={formData.twitter}
-                              onChange={handleChange}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <label htmlFor="telegram" className="text-sm font-medium">
-                              <MessageSquare className="mb-1.5 h-4 w-4 text-muted-foreground" />
-                              Telegram
-                            </label>
-                            <Input
-                              id="telegram"
-                              name="telegram"
-                              value={formData.telegram}
-                              onChange={handleChange}
-                            />
-                          </div>
+                      <div className="space-y-2">
+                        <label htmlFor="email" className="text-sm font-medium">
+                          Email
+                        </label>
+                        <div className="flex items-center space-x-2">
+                          <Mail className="h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="email"
+                            name="email"
+                            value={formData.email}
+                            onChange={handleChange}
+                            disabled
+                            placeholder="Your email"
+                          />
                         </div>
+                      </div>
 
-                        <div className="space-y-2">
-                          <label htmlFor="website" className="text-sm font-medium">
-                            <Globe className="mb-1.5 h-4 w-4 text-muted-foreground" />
-                            Website
-                          </label>
+                      <div className="space-y-2">
+                        <label htmlFor="location" className="text-sm font-medium">
+                          Location
+                        </label>
+                        <div className="flex items-center space-x-2">
+                          <MapPin className="h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="location"
+                            name="profile.location"
+                            value={formData.profile.location}
+                            onChange={handleChange}
+                            placeholder="Your location"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label htmlFor="twitter" className="text-sm font-medium">
+                          Twitter
+                        </label>
+                        <div className="flex items-center space-x-2">
+                          <Twitter className="h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="twitter"
+                            name="profile.twitter"
+                            value={formData.profile.twitter}
+                            onChange={handleChange}
+                            placeholder="Your Twitter handle"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label htmlFor="telegram" className="text-sm font-medium">
+                          Telegram
+                        </label>
+                        <div className="flex items-center space-x-2">
+                          <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="telegram"
+                            name="profile.telegram"
+                            value={formData.profile.telegram}
+                            onChange={handleChange}
+                            placeholder="Your Telegram username"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 md:col-span-2">
+                        <label htmlFor="website" className="text-sm font-medium">
+                          Website
+                        </label>
+                        <div className="flex items-center space-x-2">
+                          <Globe className="h-4 w-4 text-muted-foreground" />
                           <Input
                             id="website"
-                            name="website"
-                            value={formData.website}
+                            name="profile.website"
+                            value={formData.profile.website}
                             onChange={handleChange}
+                            placeholder="Your website URL"
                           />
                         </div>
                       </div>
-                    </TabsContent>
 
-                    <TabsContent value="preferences">
-                      <div className="space-y-6">
-                        {/* Add preferences content here */}
+                      <div className="space-y-2 md:col-span-2">
+                        <label htmlFor="bio" className="text-sm font-medium">
+                          Bio
+                        </label>
+                        <Textarea
+                          id="bio"
+                          name="profile.bio"
+                          value={formData.profile.bio}
+                          onChange={handleChange}
+                          placeholder="Tell us about yourself"
+                          rows={4}
+                        />
                       </div>
-                    </TabsContent>
-
-                    <div className="mt-6 flex items-center justify-end gap-4">
-                      <Button type="button" variant="outline">
-                        Cancel
-                      </Button>
-                      <Button type="submit" disabled={loading}>
-                        {loading ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Saving changes...
-                          </>
-                        ) : (
-                          "Save Changes"
-                        )}
-                      </Button>
                     </div>
-                  </form>
-                </Tabs>
+                  </div>
+
+                  <div className="flex justify-end">
+                    <Button type="submit" disabled={loading}>
+                      {loading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        "Save Changes"
+                      )}
+                    </Button>
+                  </div>
+                </form>
               </Card>
-            </div>
-          </div>
+            </TabsContent>
+
+            <TabsContent value="security">
+              <Card className="p-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Security Settings</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Manage your password and security preferences
+                  </p>
+                </div>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="notifications">
+              <Card className="p-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Notification Settings</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Manage your notification preferences
+                  </p>
+                </div>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
     </div>

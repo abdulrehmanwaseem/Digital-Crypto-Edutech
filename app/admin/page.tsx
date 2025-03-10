@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Users,
@@ -19,63 +20,78 @@ import {
   Tooltip,
   ResponsiveContainer
 } from "recharts"
+import { toast } from "sonner"
 
-// Mock data - replace with real data from your backend
-const data = [
-  { name: "Jan", users: 400, revenue: 2400 },
-  { name: "Feb", users: 300, revenue: 1398 },
-  { name: "Mar", users: 200, revenue: 9800 },
-  { name: "Apr", users: 278, revenue: 3908 },
-  { name: "May", users: 189, revenue: 4800 },
-  { name: "Jun", users: 239, revenue: 3800 }
-]
-
-const stats = [
-  {
-    title: "Total Users",
-    value: "1,234",
-    change: "+12%",
-    icon: Users
-  },
-  {
-    title: "Active Courses",
-    value: "24",
-    change: "+3",
-    icon: BookOpen
-  },
-  {
-    title: "Revenue",
-    value: "$12,345",
-    change: "+18%",
-    icon: DollarSign
-  },
-  {
-    title: "Referrals",
-    value: "456",
-    change: "+24%",
-    icon: Users2
+interface DashboardData {
+  stats: {
+    totalUsers: number
+    activeCourses: number
+    totalRevenue: number
+    totalReferrals: number
   }
-]
-
-const alerts = [
-  {
-    title: "New User Registrations",
-    description: "5 new users registered in the last hour",
-    timestamp: "1 hour ago"
-  },
-  {
-    title: "Payment Processing",
-    description: "3 pending payments require review",
-    timestamp: "2 hours ago"
-  },
-  {
-    title: "Course Completion",
-    description: "10 users completed their courses today",
-    timestamp: "3 hours ago"
+  chartData: {
+    name: string
+    users: number
+    revenue: number
+  }[]
+  recentActivity: {
+    newUsers: number
+    pendingPayments: number
+    completions: number
   }
-]
+}
 
 export default function AdminDashboard() {
+  const [loading, setLoading] = useState(true)
+  const [data, setData] = useState<DashboardData | null>(null)
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const response = await fetch("/api/admin/dashboard")
+        if (!response.ok) {
+          throw new Error("Failed to fetch dashboard data")
+        }
+        const dashboardData = await response.json()
+        setData(dashboardData)
+      } catch (error) {
+        console.error("Dashboard Error:", error)
+        toast.error("Failed to load dashboard data")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchDashboardData()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    )
+  }
+
+  if (!data) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-muted-foreground">Failed to load dashboard data</p>
+      </div>
+    )
+  }
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(amount)
+  }
+
+  const formatNumber = (num: number) => {
+    return new Intl.NumberFormat('en-US').format(num)
+  }
+
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">Dashboard Overview</h1>
@@ -87,8 +103,10 @@ export default function AdminDashboard() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1,234</div>
-            <p className="text-xs text-muted-foreground">+180 from last month</p>
+            <div className="text-2xl font-bold">{formatNumber(data.stats.totalUsers)}</div>
+            <p className="text-xs text-muted-foreground">
+              {data.recentActivity.newUsers} new today
+            </p>
           </CardContent>
         </Card>
         
@@ -98,8 +116,10 @@ export default function AdminDashboard() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$12,345</div>
-            <p className="text-xs text-muted-foreground">+12% from last month</p>
+            <div className="text-2xl font-bold">{formatCurrency(data.stats.totalRevenue)}</div>
+            <p className="text-xs text-muted-foreground">
+              {data.recentActivity.pendingPayments} pending payments
+            </p>
           </CardContent>
         </Card>
 
@@ -109,19 +129,19 @@ export default function AdminDashboard() {
             <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">24</div>
-            <p className="text-xs text-muted-foreground">+3 new this month</p>
+            <div className="text-2xl font-bold">{data.stats.activeCourses}</div>
+            <p className="text-xs text-muted-foreground">Published courses</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">User Activity</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Total Referrals</CardTitle>
+            <Users2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">85%</div>
-            <p className="text-xs text-muted-foreground">+5% from last week</p>
+            <div className="text-2xl font-bold">{formatNumber(data.stats.totalReferrals)}</div>
+            <p className="text-xs text-muted-foreground">Successful referrals</p>
           </CardContent>
         </Card>
       </div>
@@ -132,7 +152,7 @@ export default function AdminDashboard() {
           <h3 className="mb-4 text-lg font-semibold">User Growth</h3>
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data}>
+              <LineChart data={data.chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
@@ -152,11 +172,13 @@ export default function AdminDashboard() {
           <h3 className="mb-4 text-lg font-semibold">Revenue</h3>
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data}>
+              <LineChart data={data.chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
-                <Tooltip />
+                <Tooltip 
+                  formatter={(value) => formatCurrency(value as number)}
+                />
                 <Line
                   type="monotone"
                   dataKey="revenue"
@@ -176,22 +198,33 @@ export default function AdminDashboard() {
           <h3 className="text-lg font-semibold">Recent Activity</h3>
         </div>
         <div className="mt-4 space-y-4">
-          {alerts.map((alert, index) => (
-            <div
-              key={index}
-              className="flex items-start justify-between border-b pb-4 last:border-0 last:pb-0"
-            >
-              <div>
-                <p className="font-medium">{alert.title}</p>
-                <p className="text-sm text-muted-foreground">
-                  {alert.description}
-                </p>
-              </div>
-              <span className="text-sm text-muted-foreground">
-                {alert.timestamp}
-              </span>
+          <div className="flex items-start justify-between border-b pb-4">
+            <div>
+              <p className="font-medium">New User Registrations</p>
+              <p className="text-sm text-muted-foreground">
+                {data.recentActivity.newUsers} new users registered today
+              </p>
             </div>
-          ))}
+            <span className="text-sm text-muted-foreground">Today</span>
+          </div>
+          <div className="flex items-start justify-between border-b pb-4">
+            <div>
+              <p className="font-medium">Payment Processing</p>
+              <p className="text-sm text-muted-foreground">
+                {data.recentActivity.pendingPayments} payments pending review
+              </p>
+            </div>
+            <span className="text-sm text-muted-foreground">Today</span>
+          </div>
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="font-medium">Course Completions</p>
+              <p className="text-sm text-muted-foreground">
+                {data.recentActivity.completions} users completed their courses today
+              </p>
+            </div>
+            <span className="text-sm text-muted-foreground">Today</span>
+          </div>
         </div>
       </Card>
     </div>
