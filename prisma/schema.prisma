@@ -166,6 +166,16 @@ model Referral {
   @@index([userId])
 }
 
+model SiteSettings {
+  id              String    @id @default("1")
+  siteName        String    @default("CryptoEdu")
+  siteTitle       String    @default("Learn Crypto Trading")
+  description     String    @default("Your platform for crypto education")
+  contactEmail    String    @default("contact@cryptoedu.com")
+  maintenanceMode Boolean   @default(false)
+  updatedAt       DateTime  @updatedAt
+}
+
 model ReferralStats {
   id             String   @id @default(cuid())
   userId         String   @unique

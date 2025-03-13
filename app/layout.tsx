@@ -1,26 +1,33 @@
-import './globals.css';
-import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import "./globals.css";
+import { Inter } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
-import { Toaster } from "@/components/ui/toaster"
+import { Toaster } from "@/components/ui/toaster";
 import { ToastProvider } from "@radix-ui/react-toast";
 import { Footer } from "@/components/footer";
-import { SessionProvider } from "next-auth/react"
-import { SiteHeader } from '@/components/site-header';
-import { currentUser } from '@/lib/utils';
+import { SessionProvider } from "next-auth/react";
+import { SiteHeader } from "@/components/site-header";
+import { currentUser } from "@/lib/utils";
+import { prisma } from "@/lib/prisma";
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ["latin"] });
 
-export const metadata: Metadata = {
-  title: 'Digital Edutech',
-  description: 'Expert-led cryptocurrency education platform with flexible learning plans and earning opportunities',
-  keywords: 'crypto, trading, education, blockchain, cryptocurrency',
-  openGraph: {
-    title: 'Digital Edutech',
-    description: 'Expert-led cryptocurrency education platform',
-    images: ['/og-image.jpg'],
-  },
-};
+// Generate metadata dynamically
+export async function generateMetadata() {
+  const settings = await prisma.siteSettings.findFirst();
+
+  return {
+    title: settings?.siteName || "Digital Edutech",
+    description:
+      settings?.description || "Expert-led cryptocurrency education platform",
+    keywords: "crypto, trading, education, blockchain, cryptocurrency",
+    openGraph: {
+      title: settings?.siteName || "Digital Edutech",
+      description:
+        settings?.description || "Expert-led cryptocurrency education platform",
+      images: ["/og-image.jpg"],
+    },
+  };
+}
 
 export default async function RootLayout({
   children,
@@ -28,6 +35,8 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   const user = await currentUser();
+  const settings = await prisma.siteSettings.findFirst();
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -42,11 +51,9 @@ export default async function RootLayout({
             suppressHydrationWarning
           >
             <ToastProvider swipeDirection="right">
-              <SiteHeader session={user} />
-              <main className="min-h-screen">
-                {children}
-              </main>
-              <Footer />
+              <SiteHeader session={user} siteSettings={settings} />
+              <main className="min-h-screen">{children}</main>
+              <Footer siteSettings={settings} />
             </ToastProvider>
             <Toaster />
           </ThemeProvider>

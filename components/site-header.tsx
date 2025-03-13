@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import { ModeToggle } from "@/components/mode-toggle"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
+import { ModeToggle } from "@/components/mode-toggle";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,15 +10,28 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList } from "@/components/ui/navigation-menu"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { cn } from "@/lib/utils"
-import { BookOpen, Home, LogOut, Menu, Phone, Users, Wallet2 } from "lucide-react"
-import { signOut } from "next-auth/react"
-import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+} from "@/components/ui/dropdown-menu";
+import {
+  NavigationMenu,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+} from "@/components/ui/navigation-menu";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { cn } from "@/lib/utils";
+import {
+  BookOpen,
+  Home,
+  LogOut,
+  Menu,
+  Phone,
+  Users,
+  Wallet2,
+} from "lucide-react";
+import { signOut } from "next-auth/react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const navigationItems = [
   { href: "/", label: "Home", icon: Home },
@@ -26,57 +39,59 @@ const navigationItems = [
   { href: "/plans", label: "Plans", icon: Wallet2 },
   { href: "/services", label: "Services", icon: Users },
   { href: "/contact", label: "Contact", icon: Phone },
-]
+];
 
 const authenticatedItems = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
   { href: "/plans", label: "Plans", icon: Wallet2 },
   { href: "/profile", label: "Profile", icon: Users },
   { href: "/settings", label: "Settings", icon: BookOpen },
-]
+];
 
-export function SiteHeader({session}) {
-  const pathname = usePathname()
-  const router = useRouter()
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [isScrolled, setIsScrolled] = useState(false)
-  const [mounted, setMounted] = useState(false)
+export function SiteHeader({ session, siteSettings }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true)
+    setMounted(true);
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20)
-    }
-    window.addEventListener("scroll", handleScroll)
-    return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
+      setIsScrolled(window.scrollY > 20);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const handleLogout = async () => {
-    await signOut({ 
+    await signOut({
       redirect: true,
-      callbackUrl: '/'
-    })
-  }
+      callbackUrl: "/",
+    });
+  };
 
   // Don't render navigation until mounted to prevent flashing
   if (!mounted) {
     return (
-      <header className={cn(
-        "sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60",
-        isScrolled && "shadow-sm"
-      )}>
+      <header
+        className={cn(
+          "sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60",
+          isScrolled && "shadow-sm"
+        )}
+      >
         <div className="container flex h-16 items-center">
           <div className="mr-4 hidden md:flex">
             <Link href="/" className="mr-6 flex items-center space-x-2">
               <div className="flex items-center justify-center bg-gradient-to-r from-blue-600 to-purple-600 p-2 rounded-md">
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  className="h-8 w-8 text-white animate-spin-slow" 
-                  viewBox="0 0 24 24" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  strokeWidth="2" 
-                  strokeLinecap="round" 
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-8 w-8 text-white animate-spin-slow"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
                   strokeLinejoin="round"
                 >
                   <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
@@ -85,42 +100,47 @@ export function SiteHeader({session}) {
                 </svg>
               </div>
               <span className="font-bold text-xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Digital Edutech
+                {siteSettings?.siteName || "Digital Edutech"}
               </span>
             </Link>
           </div>
         </div>
       </header>
-    )
+    );
   }
 
   // Only show navigation items appropriate for the current auth state
-  const items = session  ? authenticatedItems : navigationItems
+  const items = session ? authenticatedItems : navigationItems;
 
   const userInitials = session?.name
-    ? session.name.split(" ").map(n => n[0]).join("").toUpperCase()
-    : "U"
-
+    ? session.name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+    : "U";
 
   return (
-    <header className={cn(
-      "sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60",
-      isScrolled && "shadow-sm"
-    )}>
+    <header
+      className={cn(
+        "sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60",
+        isScrolled && "shadow-sm"
+      )}
+    >
       <div className="container flex h-16 items-center justify-between">
         {/* Desktop Logo and Navigation */}
         <div className="hidden md:flex items-center">
           <Link href="/" className="mr-6 flex items-center space-x-2">
             <div className="flex items-center justify-center bg-gradient-to-r from-blue-600 to-purple-600 p-2 rounded-md relative overflow-hidden group">
               <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                className="h-8 w-8 text-white animate-spin-slow" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="2" 
-                strokeLinecap="round" 
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-8 w-8 text-white animate-spin-slow"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
                 strokeLinejoin="round"
               >
                 <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
@@ -129,7 +149,7 @@ export function SiteHeader({session}) {
               </svg>
             </div>
             <span className="font-bold text-xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Digital Edutech
+              {siteSettings?.siteName || "Digital Edutech"}
             </span>
           </Link>
           <NavigationMenu>
@@ -158,14 +178,14 @@ export function SiteHeader({session}) {
           <Link href="/" className="flex items-center space-x-2">
             <div className="flex items-center justify-center bg-gradient-to-r from-blue-600 to-purple-600 p-2 rounded-md relative overflow-hidden group">
               <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                className="h-6 w-6 text-white animate-spin-slow" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="2" 
-                strokeLinecap="round" 
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6 text-white animate-spin-slow"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
                 strokeLinejoin="round"
               >
                 <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
@@ -174,7 +194,7 @@ export function SiteHeader({session}) {
               </svg>
             </div>
             <span className="font-bold text-lg bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Digital Edutech
+              {siteSettings?.siteName || "Digital Edutech"}
             </span>
           </Link>
         </div>
@@ -182,16 +202,22 @@ export function SiteHeader({session}) {
         {/* Right Side Actions */}
         <div className="flex items-center gap-2">
           <ModeToggle />
-          
+
           {session ? (
             <>
               {/* Desktop User Menu */}
               <div className="hidden md:flex">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                    <Button
+                      variant="ghost"
+                      className="relative h-8 w-8 rounded-full"
+                    >
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src={session?.profile?.avatar || ""} alt={session?.name || ""} />
+                        <AvatarImage
+                          src={session?.profile?.avatar || ""}
+                          alt={session?.name || ""}
+                        />
                         <AvatarFallback>{userInitials}</AvatarFallback>
                       </Avatar>
                     </Button>
@@ -199,8 +225,12 @@ export function SiteHeader({session}) {
                   <DropdownMenuContent className="w-56" align="end" forceMount>
                     <DropdownMenuLabel className="font-normal">
                       <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium leading-none">{session?.name}</p>
-                        <p className="text-xs leading-none text-muted-foreground">{session?.email}</p>
+                        <p className="text-sm font-medium leading-none">
+                          {session?.name}
+                        </p>
+                        <p className="text-xs leading-none text-muted-foreground">
+                          {session?.email}
+                        </p>
                       </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
@@ -236,17 +266,22 @@ export function SiteHeader({session}) {
                   <div className="flex flex-col space-y-4 mt-4">
                     <div className="flex items-center space-x-4 mb-4">
                       <Avatar>
-                        <AvatarImage src={session?.image || ""} alt={session?.name || ""} />
+                        <AvatarImage
+                          src={session?.image || ""}
+                          alt={session?.name || ""}
+                        />
                         <AvatarFallback>{userInitials}</AvatarFallback>
                       </Avatar>
                       <div>
                         <p className="text-sm font-medium">{session?.name}</p>
-                        <p className="text-xs text-muted-foreground">{session?.email}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {session?.email}
+                        </p>
                       </div>
                     </div>
                     {authenticatedItems.map(({ href, label, icon: Icon }) => (
-                      <Link 
-                        key={href} 
+                      <Link
+                        key={href}
                         href={href}
                         className={cn(
                           "flex items-center space-x-2 text-sm font-medium",
@@ -258,12 +293,12 @@ export function SiteHeader({session}) {
                         <span>{label}</span>
                       </Link>
                     ))}
-                    <Button 
-                      variant="ghost" 
+                    <Button
+                      variant="ghost"
                       className="justify-start text-red-600 hover:text-red-600 hover:bg-red-50/50 px-0"
                       onClick={() => {
-                        setIsMobileMenuOpen(false)
-                        handleLogout()
+                        setIsMobileMenuOpen(false);
+                        handleLogout();
                       }}
                     >
                       <LogOut className="mr-2 h-4 w-4" />
@@ -291,8 +326,8 @@ export function SiteHeader({session}) {
                 <SheetContent side="right" className="w-80">
                   <div className="flex flex-col space-y-4 mt-4">
                     {navigationItems.map(({ href, label, icon: Icon }) => (
-                      <Link 
-                        key={href} 
+                      <Link
+                        key={href}
                         href={href}
                         className={cn(
                           "flex items-center space-x-2 text-sm font-medium",
@@ -304,7 +339,7 @@ export function SiteHeader({session}) {
                         <span>{label}</span>
                       </Link>
                     ))}
-                    <Link 
+                    <Link
                       href="/login"
                       className="flex items-center space-x-2 text-sm font-medium"
                       onClick={() => setIsMobileMenuOpen(false)}
@@ -320,5 +355,5 @@ export function SiteHeader({session}) {
         </div>
       </div>
     </header>
-  )
+  );
 }

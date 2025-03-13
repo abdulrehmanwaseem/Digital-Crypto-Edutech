@@ -1,14 +1,21 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ReferralSection } from "@/components/dashboard/referral-section"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Progress } from "@/components/ui/progress"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
-import Image from "next/image"
+import { useState, useEffect } from "react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ReferralSection } from "@/components/dashboard/referral-section";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import Image from "next/image";
 import {
   BookOpen,
   Trophy,
@@ -22,108 +29,118 @@ import {
   ArrowDownToLine,
   DollarSign,
   Loader2,
-  ArrowLeft
-} from "lucide-react"
-import { useSession } from "next-auth/react"
-import { useRouter } from "next/navigation"
+  ArrowLeft,
+} from "lucide-react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 interface Course {
-  id: string
-  title: string
-  progress: number
-  status: string
-  lastAccessed: string | null
+  id: string;
+  title: string;
+  progress: number;
+  status: string;
+  lastAccessed: string | null;
 }
 
 interface WithdrawalMethod {
-  type: 'bank' | 'crypto'
+  type: "bank" | "crypto";
   bankDetails?: {
-    name: string
-    bankName: string
-    accountNo: string
-    ifscCode: string
-  }
+    name: string;
+    bankName: string;
+    accountNo: string;
+    ifscCode: string;
+  };
   cryptoDetails?: {
-    network: string
-    address: string
-  }
+    network: string;
+    address: string;
+  };
 }
 
 interface Withdrawal {
-  amount: number
-  method: 'bank' | 'crypto'
-  details: WithdrawalMethod
-  timestamp: string
-  status: 'pending' | 'completed' | 'failed'
+  amount: number;
+  method: "bank" | "crypto";
+  details: WithdrawalMethod;
+  timestamp: string;
+  status: "pending" | "completed" | "failed";
 }
 
 export default function DashboardPage() {
-  const { data: session } = useSession()
-  const router = useRouter()
-  const [courses, setCourses] = useState<Course[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [withdrawAmount, setWithdrawAmount] = useState("")
-  const [isWithdrawing, setIsWithdrawing] = useState(false)
-  const [isWithdrawDialogOpen, setIsWithdrawDialogOpen] = useState(false)
+  const { data: session } = useSession();
+  const router = useRouter();
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [isWithdrawDialogOpen, setIsWithdrawDialogOpen] = useState(false);
   const [withdrawalMethod, setWithdrawalMethod] = useState<WithdrawalMethod>({
-    type: 'bank',
+    type: "bank",
     bankDetails: {
-      name: '',
-      bankName: '',
-      accountNo: '',
-      ifscCode: ''
-    }
-  })
+      name: "",
+      bankName: "",
+      accountNo: "",
+      ifscCode: "",
+    },
+  });
 
   useEffect(() => {
     if (!session) {
-      router.push("/login")
-      return
+      router.push("/login");
+      return;
     }
-    fetchUserData()
-  }, [session, router])
+    fetchUserData();
+  }, [session, router]);
 
   const fetchUserData = async () => {
     try {
-      const response = await fetch("/api/dashboard")
-      if (!response.ok) throw new Error("Failed to fetch dashboard data")
-      const data = await response.json()
-      setCourses(data.courses)
+      const response = await fetch("/api/dashboard");
+      if (!response.ok) throw new Error("Failed to fetch dashboard data");
+      const data = await response.json();
+      setCourses(data.courses);
     } catch (error) {
-      console.error("Error fetching dashboard data:", error)
+      console.error("Error fetching dashboard data:", error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   if (!session || !session.user) {
-    return null
+    return null;
   }
 
   const handleWithdrawSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (!withdrawAmount || parseFloat(withdrawAmount) <= 0) {
-      return
+      return;
     }
 
     try {
-      setIsWithdrawing(true)
+      setIsWithdrawing(true);
       // Add withdrawal submission logic here
-      setIsWithdrawDialogOpen(false)
-      setWithdrawAmount("")
+      setIsWithdrawDialogOpen(false);
+      setWithdrawAmount("");
     } catch (error) {
-      console.error("Withdrawal error:", error)
+      console.error("Withdrawal error:", error);
     } finally {
-      setIsWithdrawing(false)
+      setIsWithdrawing(false);
     }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex justify-center items-center mb-10">
+        <Loader2 className="mr-2 h-8 w-8 animate-spin" />
+      </div>
+    );
   }
 
   return (
     <div className="container py-6 space-y-6">
       <div className="flex flex-col gap-4">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">Welcome back, {session.user.name}</h1>
-          <Button variant="ghost" onClick={() => router.push('/')}>
+          <h1 className="text-3xl font-bold">
+            Welcome back, {session.user.name}
+          </h1>
+          <Button variant="ghost" onClick={() => router.push("/")}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Home
           </Button>
@@ -143,14 +160,16 @@ export default function DashboardPage() {
           <div className="grid gap-4 md:grid-cols-3">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Enrolled Courses</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Enrolled Courses
+                </CardTitle>
                 <BookOpen className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{courses.length}</div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Completed</CardTitle>
@@ -158,19 +177,21 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {courses.filter(c => c.status === "COMPLETED").length}
+                  {courses.filter((c) => c.status === "COMPLETED").length}
                 </div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">In Progress</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  In Progress
+                </CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {courses.filter(c => c.status === "ACTIVE").length}
+                  {courses.filter((c) => c.status === "ACTIVE").length}
                 </div>
               </CardContent>
             </Card>
@@ -184,12 +205,17 @@ export default function DashboardPage() {
               <CardContent>
                 <div className="space-y-4">
                   {courses.map((course) => (
-                    <div key={course.id} className="flex items-center justify-between border-b last:border-0 pb-2">
+                    <div
+                      key={course.id}
+                      className="flex items-center justify-between border-b last:border-0 pb-2"
+                    >
                       <div>
                         <div className="font-medium">{course.title}</div>
                         <div className="text-sm text-muted-foreground">
-                          {course.lastAccessed 
-                            ? `Last accessed ${new Date(course.lastAccessed).toLocaleDateString()}`
+                          {course.lastAccessed
+                            ? `Last accessed ${new Date(
+                                course.lastAccessed
+                              ).toLocaleDateString()}`
                             : "Not started yet"}
                         </div>
                       </div>
@@ -202,7 +228,9 @@ export default function DashboardPage() {
           ) : (
             <Card>
               <CardContent className="p-6 text-center">
-                <p className="text-muted-foreground">You haven't enrolled in any courses yet.</p>
+                <p className="text-muted-foreground">
+                  You haven't enrolled in any courses yet.
+                </p>
               </CardContent>
             </Card>
           )}
@@ -213,7 +241,10 @@ export default function DashboardPage() {
         </TabsContent>
       </Tabs>
 
-      <Dialog open={isWithdrawDialogOpen} onOpenChange={setIsWithdrawDialogOpen}>
+      <Dialog
+        open={isWithdrawDialogOpen}
+        onOpenChange={setIsWithdrawDialogOpen}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Withdraw Earnings</DialogTitle>
@@ -232,22 +263,29 @@ export default function DashboardPage() {
                   placeholder="0.00"
                   className="pl-9"
                   value={withdrawAmount}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setWithdrawAmount(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setWithdrawAmount(e.target.value)
+                  }
                 />
               </div>
             </div>
 
-            {withdrawalMethod.type === 'bank' && (
+            {withdrawalMethod.type === "bank" && (
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium">Account Holder Name</label>
+                  <label className="text-sm font-medium">
+                    Account Holder Name
+                  </label>
                   <Input
                     placeholder="John Doe"
                     value={withdrawalMethod.bankDetails?.name}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
-                      setWithdrawalMethod(prev => ({
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setWithdrawalMethod((prev) => ({
                         ...prev,
-                        bankDetails: { ...prev.bankDetails!, name: e.target.value }
+                        bankDetails: {
+                          ...prev.bankDetails!,
+                          name: e.target.value,
+                        },
                       }))
                     }
                   />
@@ -257,10 +295,13 @@ export default function DashboardPage() {
                   <Input
                     placeholder="Bank Name"
                     value={withdrawalMethod.bankDetails?.bankName}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
-                      setWithdrawalMethod(prev => ({
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setWithdrawalMethod((prev) => ({
                         ...prev,
-                        bankDetails: { ...prev.bankDetails!, bankName: e.target.value }
+                        bankDetails: {
+                          ...prev.bankDetails!,
+                          bankName: e.target.value,
+                        },
                       }))
                     }
                   />
@@ -269,11 +310,17 @@ export default function DashboardPage() {
             )}
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsWithdrawDialogOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsWithdrawDialogOpen(false)}
+              >
                 Cancel
               </Button>
               <Button type="submit" disabled={isWithdrawing}>
-                {isWithdrawing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isWithdrawing && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
                 Withdraw
               </Button>
             </DialogFooter>
@@ -281,5 +328,5 @@ export default function DashboardPage() {
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }

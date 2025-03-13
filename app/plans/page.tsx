@@ -8,6 +8,8 @@ import { Check, Crown, Star } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { Skeleton } from "@/components/ui/skeleton";
+import { PlanSkeleton } from "@/components/skeletons/plan-skeleton";
 
 interface Plan {
   courseId: string;
@@ -57,10 +59,12 @@ export default function PlansPage() {
     referrerId: string;
   } | null>(null);
   const { user: token } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
 
   // Fetch courses from the API on mount
   useEffect(() => {
     const fetchCourses = async () => {
+      setIsLoading(true);
       try {
         const res = await fetch("/api/courses");
         if (!res.ok) throw new Error("Failed to load courses");
@@ -84,6 +88,8 @@ export default function PlansPage() {
           description: "Failed to load courses",
           variant: "destructive",
         });
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -219,117 +225,130 @@ export default function PlansPage() {
 
       {/* Plan Cards */}
       <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4 max-w-7xl mx-auto">
-        {discountedPlans.map((plan) => (
-          <Card
-            key={plan.courseId}
-            className={`p-6 relative overflow-hidden group transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 flex flex-col ${
-              plan.name === "Premium" ? "border-primary shadow-lg" : ""
-            } ${
-              plan.name === "Professional" ? "border-purple-500 shadow-lg" : ""
-            }`}
-          >
-            {/* Popular Badge for Premium */}
-            {plan.name === "Premium" && (
-              <div className="absolute top-5 -right-12 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground px-14 py-1.5 text-sm transform rotate-45 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <div className="flex items-center justify-center gap-1">
-                  <Star className="h-4 w-4" />
-                  <span>Most Popular</span>
+        {isLoading ? (
+          <>
+            <PlanSkeleton />
+            <PlanSkeleton />
+            <PlanSkeleton />
+            <PlanSkeleton />
+          </>
+        ) : (
+          discountedPlans.map((plan) => (
+            <Card
+              key={plan.courseId}
+              className={`p-6 relative overflow-hidden group transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 flex flex-col ${
+                plan.name === "Premium" ? "border-primary shadow-lg" : ""
+              } ${
+                plan.name === "Professional"
+                  ? "border-purple-500 shadow-lg"
+                  : ""
+              }`}
+            >
+              {/* Popular Badge for Premium */}
+              {plan.name === "Premium" && (
+                <div className="absolute top-5 -right-12 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground px-14 py-1.5 text-sm transform rotate-45 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <div className="flex items-center justify-center gap-1">
+                    <Star className="h-4 w-4" />
+                    <span>Most Popular</span>
+                  </div>
                 </div>
-              </div>
-            )}
-
-            {/* Best Value Badge for Professional */}
-            {plan.name === "Professional" && (
-              <div className="absolute top-5 -right-12 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-14 py-1.5 text-sm transform rotate-45 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <div className="flex items-center justify-center gap-1">
-                  <Crown className="h-4 w-4" />
-                  <span>Best Value</span>
-                </div>
-              </div>
-            )}
-
-            <div className="mb-6 relative">
-              <h2 className="text-2xl font-bold mb-2">{plan.name}</h2>
-              <div className="flex items-baseline gap-1">
-                {plan.discountApplied ? (
-                  <>
-                    <span className="text-4xl font-bold text-primary">
-                      ${plan.price}
-                    </span>
-                    <span className="text-lg line-through text-muted-foreground">
-                      ${plan.originalPrice}
-                    </span>
-                    <span className="text-sm text-green-600">
-                      (
-                      {plan.referralBonus.type === "percentage"
-                        ? `${plan.referralBonus.amount}% off`
-                        : `$${plan.referralBonus.amount} off`}
-                      )
-                    </span>
-                  </>
-                ) : (
-                  <span className="text-4xl font-bold">${plan.price}</span>
-                )}
-                <span className="text-muted-foreground">/{plan.duration}</span>
-              </div>
-              {plan.stipend && (
-                <p className="text-green-600 font-medium mt-2 text-sm">
-                  ${plan.stipend.amount} monthly stipend for{" "}
-                  {plan.stipend.months} months
-                </p>
               )}
-            </div>
 
-            <div className="flex-grow">
-              <ul className="space-y-3 mb-6">
-                {plan.features.map((feature) => (
-                  <li
-                    key={feature}
-                    className="flex items-start gap-2 group-hover:transform group-hover:translate-x-1 transition-transform duration-200"
-                  >
-                    <Check className="h-4 w-4 text-primary shrink-0 mt-1" />
-                    <span className="text-sm">{feature}</span>
-                  </li>
-                ))}
-                {plan.referralBonus && (
-                  <li className="flex items-start gap-2">
-                    <Check className="h-4 w-4 text-primary shrink-0 mt-1" />
-                    <span className="text-sm">
-                      {plan.referralBonus.type === "percentage"
-                        ? `${plan.referralBonus.amount}% referral bonus`
-                        : `$${plan.referralBonus.amount} referral bonus`}
-                    </span>
-                  </li>
+              {/* Best Value Badge for Professional */}
+              {plan.name === "Professional" && (
+                <div className="absolute top-5 -right-12 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-14 py-1.5 text-sm transform rotate-45 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <div className="flex items-center justify-center gap-1">
+                    <Crown className="h-4 w-4" />
+                    <span>Best Value</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="mb-6 relative">
+                <h2 className="text-2xl font-bold mb-2">{plan.name}</h2>
+                <div className="flex items-baseline gap-1">
+                  {plan.discountApplied ? (
+                    <>
+                      <span className="text-4xl font-bold text-primary">
+                        ${plan.price}
+                      </span>
+                      <span className="text-lg line-through text-muted-foreground">
+                        ${plan.originalPrice}
+                      </span>
+                      <span className="text-sm text-green-600">
+                        (
+                        {plan.referralBonus.type === "percentage"
+                          ? `${plan.referralBonus.amount}% off`
+                          : `$${plan.referralBonus.amount} off`}
+                        )
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-4xl font-bold">${plan.price}</span>
+                  )}
+                  <span className="text-muted-foreground">
+                    /{plan.duration}
+                  </span>
+                </div>
+                {plan.stipend && (
+                  <p className="text-green-600 font-medium mt-2 text-sm">
+                    ${plan.stipend.amount} monthly stipend for{" "}
+                    {plan.stipend.months} months
+                  </p>
                 )}
-              </ul>
-            </div>
+              </div>
 
-            <div className="pt-6 mt-auto border-t">
-              <Button
-                className={`w-full h-12 text-sm font-medium transition-all duration-300 ${
-                  plan.name === "Professional"
-                    ? "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 shadow-lg hover:shadow-xl"
-                    : plan.name === "Premium"
-                    ? "bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl"
-                    : "hover:bg-primary hover:text-primary-foreground"
-                } group-hover:scale-105`}
-                variant={
-                  plan.name === "Premium" || plan.name === "Professional"
-                    ? "default"
-                    : "outline"
-                }
-                onClick={() => handlePlanSelection(plan)}
-              >
-                Get Started Now
-              </Button>
-              <p className="text-xs text-center text-muted-foreground mt-3 group-hover:text-primary transition-colors duration-300">
-                {plan.name === "Professional" || plan.name === "Premium"
-                  ? "Instant Access to All Features"
-                  : "7-Day Money-Back Guarantee"}
-              </p>
-            </div>
-          </Card>
-        ))}
+              <div className="flex-grow">
+                <ul className="space-y-3 mb-6">
+                  {plan.features.map((feature) => (
+                    <li
+                      key={feature}
+                      className="flex items-start gap-2 group-hover:transform group-hover:translate-x-1 transition-transform duration-200"
+                    >
+                      <Check className="h-4 w-4 text-primary shrink-0 mt-1" />
+                      <span className="text-sm">{feature}</span>
+                    </li>
+                  ))}
+                  {plan.referralBonus && (
+                    <li className="flex items-start gap-2">
+                      <Check className="h-4 w-4 text-primary shrink-0 mt-1" />
+                      <span className="text-sm">
+                        {plan.referralBonus.type === "percentage"
+                          ? `${plan.referralBonus.amount}% referral bonus`
+                          : `$${plan.referralBonus.amount} referral bonus`}
+                      </span>
+                    </li>
+                  )}
+                </ul>
+              </div>
+
+              <div className="pt-6 mt-auto border-t">
+                <Button
+                  className={`w-full h-12 text-sm font-medium transition-all duration-300 ${
+                    plan.name === "Professional"
+                      ? "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 shadow-lg hover:shadow-xl"
+                      : plan.name === "Premium"
+                      ? "bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl"
+                      : "hover:bg-primary hover:text-primary-foreground"
+                  } group-hover:scale-105`}
+                  variant={
+                    plan.name === "Premium" || plan.name === "Professional"
+                      ? "default"
+                      : "outline"
+                  }
+                  onClick={() => handlePlanSelection(plan)}
+                >
+                  Get Started Now
+                </Button>
+                <p className="text-xs text-center text-muted-foreground mt-3 group-hover:text-primary transition-colors duration-300">
+                  {plan.name === "Professional" || plan.name === "Premium"
+                    ? "Instant Access to All Features"
+                    : "7-Day Money-Back Guarantee"}
+                </p>
+              </div>
+            </Card>
+          ))
+        )}
       </div>
 
       <div className="mt-12 text-center">
