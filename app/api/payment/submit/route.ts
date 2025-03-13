@@ -1,74 +1,73 @@
-import { NextResponse } from "next/server"
-import { auth } from "@/auth"
-import { prisma } from "@/lib/prisma"
-import { z } from "zod"
-
-const paymentSchema = z.object({
-  planName: z.string(),
-  price: z.number(),
-  paymentMethod: z.enum(['bank', 'crypto', 'other']),
-  transactionId: z.string(),
-  proofImageUrl: z.string().url(),
-  referralCode: z.string().optional(),
-  referrerId: z.string().optional()
-})
+import { NextResponse } from "next/server";
+import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
+import { paymentSchema } from "@/lib/validations/payment";
+import { PaymentService } from "@/lib/services/payment";
 
 export async function POST(request: Request) {
   try {
-    const session = await auth()
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json()
-    const validatedData = paymentSchema.parse(body)
+    const body = await request.json();
+    console.log("Request body:", body);
 
-    // Create payment record
-    const payment = await prisma.payment.create({
-      data: {
-        userId: session.user.id,
-        courseId: "default", // We'll update this once we have course integration
-        amount: validatedData.price,
-        proofImageUrl: validatedData.proofImageUrl,
-        status: "PENDING"
-      }
-    })
+    const validatedFields = paymentSchema.safeParse(body);
+    console.log(validatedFields.error);
 
-    // If referral code was used, update referral stats
-    if (validatedData.referrerId) {
-      await prisma.referralStats.update({
-        where: { userId: validatedData.referrerId },
-        data: {
-          totalReferrals: { increment: 1 },
-          activeReferrals: { increment: 1 },
-          earnings: {
-            increment: validatedData.price * 0.1 // 10% referral commission
-          }
-        }
-      })
-
-      // Update the referred user's referredBy field
-      await prisma.user.update({
-        where: { id: session.user.id },
-        data: { referredBy: validatedData.referrerId }
-      })
-    }
-
-    return NextResponse.json({
-      message: "Payment submitted successfully",
-      paymentId: payment.id
-    })
-  } catch (error) {
-    if (error instanceof z.ZodError) {
+    if (!validatedFields.success) {
       return NextResponse.json(
-        { error: "Invalid data", details: error.errors },
+        { error: validatedFields.error.errors[0].message },
         { status: 400 }
-      )
+      );
     }
-    console.error("Payment Submit Error:", error)
+
+    const {
+      courseId,
+      amount,
+      currency,
+      transactionId,
+      proofImageUrl,
+      referralCode,
+    } = validatedFields.data;
+
+    // Check if the course (or plan) exists
+    const course = await prisma.course.findUnique({
+      where: { id: courseId },
+      select: { id: true, price: true },
+    });
+
+    if (!course) {
+      return NextResponse.json({ error: "Course not found" }, { status: 404 });
+    }
+
+    // Validate that the payment amount matches the course price
+    if (amount !== course.price) {
+      return NextResponse.json(
+        { error: "Payment amount does not match course price" },
+        { status: 400 }
+      );
+    }
+
+    // Process the payment
+    const payment = await PaymentService.processPayment({
+      userId: session.user.id,
+      courseId,
+      amount,
+      currency,
+      transactionId,
+      proofImageUrl,
+      referralCode: referralCode || undefined, // Ensure it’s null if not provided
+    });
+
+    return NextResponse.json(payment);
+  } catch (error) {
+    console.error("Payment Error:", error);
     return NextResponse.json(
-      { error: "Failed to submit payment" },
+      { error: "Failed to process payment" },
       { status: 500 }
-    )
+    );
   }
 }

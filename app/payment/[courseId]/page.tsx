@@ -1,28 +1,29 @@
-import { notFound } from "next/navigation"
-import { auth } from "@/auth"
-import { prisma } from "@/lib/prisma"
-import { PaymentForm } from "@/components/payment/payment-form"
-import { PaymentHistory } from "@/components/payment/payment-history"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { notFound } from "next/navigation";
+import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
+import { PaymentForm } from "@/components/payment/payment-form";
+import { PaymentHistory } from "@/components/payment/payment-history";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface PaymentPageProps {
   params: {
-    courseId: string
-  }
+    courseId: string;
+  };
 }
 
 export default async function PaymentPage({ params }: PaymentPageProps) {
-  const session = await auth()
+  const session = await auth();
   if (!session?.user) {
-    return notFound()
+    return notFound();
   }
+  console.log("Requested course ID:", params.courseId);
 
   const course = await prisma.course.findUnique({
     where: { id: params.courseId },
-  })
+  });
 
   if (!course) {
-    return notFound()
+    return notFound();
   }
 
   // Check if user is already enrolled
@@ -33,7 +34,7 @@ export default async function PaymentPage({ params }: PaymentPageProps) {
         courseId: course.id,
       },
     },
-  })
+  });
 
   // Check if there's a pending payment
   const pendingPayment = await prisma.payment.findFirst({
@@ -42,7 +43,7 @@ export default async function PaymentPage({ params }: PaymentPageProps) {
       courseId: course.id,
       status: "PENDING",
     },
-  })
+  });
 
   if (existingEnrollment?.status === "ACTIVE") {
     return (
@@ -53,12 +54,13 @@ export default async function PaymentPage({ params }: PaymentPageProps) {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground">
-              You are already enrolled in this course. You can access it from your dashboard.
+              You are already enrolled in this course. You can access it from
+              your dashboard.
             </p>
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
@@ -94,7 +96,8 @@ export default async function PaymentPage({ params }: PaymentPageProps) {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">
-                    Your payment is being processed. You will be notified once it is verified.
+                    Your payment is being processed. You will be notified once
+                    it is verified.
                   </p>
                 </CardContent>
               </Card>
@@ -111,4 +114,5 @@ export default async function PaymentPage({ params }: PaymentPageProps) {
         <PaymentHistory />
       </div>
     </div>
-  )
+  );
+}

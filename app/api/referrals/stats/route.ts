@@ -1,22 +1,70 @@
-import { NextResponse } from 'next/server';
+import { auth } from "@/auth"
+import { prisma } from "@/lib/prisma"
+import { NextResponse } from "next/server"
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
-    // Mock data structure that would normally come from database
-    const mockReferralData = {
-      myReferralCode: localStorage.getItem('referralCode') || '',
-      totalReferrals: parseInt(localStorage.getItem('totalReferrals') || '0'),
-      activeReferrals: parseInt(localStorage.getItem('activeReferrals') || '0'),
-      totalEarnings: parseFloat(localStorage.getItem('totalEarnings') || '0'),
-      referredUsers: JSON.parse(localStorage.getItem('referredUsers') || '[]')
-    };
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
 
-    return NextResponse.json(mockReferralData);
+    const stats = await prisma.referralStats.findUnique({
+      where: { userId: session.user.id },
+      include: {
+        user: {
+          select: {
+            referralCode: true
+          }
+        }
+      }
+    })
+
+    if (!stats) {
+      return NextResponse.json({
+        referralCode: session.user.referralCode,
+        totalReferrals: 0,
+        activeReferrals: 0,
+        earnings: 0,
+        referredUsers: []
+      })
+    }
+
+    // Get referred users
+    const referredUsers = await prisma.user.findMany({
+      where: { referredBy: session.user.referralCode },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        createdAt: true,
+        payments: {
+          where: { status: "VERIFIED" },
+          select: {
+            amount: true,
+            createdAt: true
+          }
+        }
+      }
+    })
+
+    return NextResponse.json({
+      referralCode: session.user.referralCode,
+      totalReferrals: stats.totalReferrals,
+      activeReferrals: stats.activeReferrals,
+      earnings: stats.earnings,
+      referredUsers: referredUsers.map(user => ({
+        name: user.name,
+        email: user.email,
+        joinedAt: user.createdAt,
+        totalSpent: user.payments.reduce((sum, p) => sum + p.amount, 0)
+      }))
+    })
   } catch (error) {
-    console.error('Error fetching referral stats:', error);
+    console.error("Error fetching referral stats:", error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: "Internal server error" },
       { status: 500 }
-    );
+    )
   }
-} 
+}

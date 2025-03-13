@@ -12,10 +12,9 @@ export default auth((req) => {
   if (nextUrl.pathname.startsWith('/images/')) {
     return NextResponse.next();
   }
-  
   // API routes should be handled separately
   if (nextUrl.pathname.startsWith("/api")) {
-    return NextResponse.next();
+    return NextResponse.next(); 
   }
 
   // Auth routes (login, register, error)

@@ -13,7 +13,7 @@ export async function GET(request: Request) {
       enrollments,
       payments,
       referralStats,
-      latestActivities
+      referredUsers
     ] = await Promise.all([
       // Get user's enrollments with course details
       prisma.enrollment.findMany({
@@ -28,7 +28,7 @@ export async function GET(request: Request) {
             },
           },
         },
-        orderBy: { createdAt: "desc" },
+        orderBy: { updatedAt: "desc" },
       }),
 
       // Get user's payment history
@@ -38,11 +38,11 @@ export async function GET(request: Request) {
           course: {
             select: {
               title: true,
+              price: true,
             },
           },
         },
         orderBy: { createdAt: "desc" },
-        take: 5,
       }),
 
       // Get user's referral stats
@@ -50,41 +50,88 @@ export async function GET(request: Request) {
         where: { userId: session.user.id },
       }),
 
-      // Get user's latest activities
-      prisma.user.findUnique({
-        where: { id: session.user.id },
+      // Get referred users with their payment data
+      prisma.user.findMany({
+        where: { referredBy: session.user.referralCode },
         select: {
-          profile: {
+          id: true,
+          name: true,
+          email: true,
+          createdAt: true,
+          payments: {
+            where: { status: "VERIFIED" },
             select: {
-              activities: true,
-            },
-          },
-        },
-      }),
+              amount: true,
+              createdAt: true,
+              course: {
+                select: {
+                  title: true,
+                  price: true
+                }
+              }
+            }
+          }
+        }
+      })
     ]);
+
+    // Calculate total earnings from verified payments
+    const totalEarnings = payments
+      .filter(p => p.status === "VERIFIED")
+      .reduce((sum, p) => sum + p.amount, 0);
+
+    // Calculate referral earnings (10% of referred users' payments)
+    const referralEarnings = referredUsers
+      .flatMap(user => user.payments)
+      .reduce((sum, payment) => sum + (payment.amount * 0.1), 0);
+
+    // Format courses data
+    const courses = enrollments.map((enrollment) => ({
+      id: enrollment.course.id,
+      title: enrollment.course.title,
+      status: enrollment.status,
+      progress: 0, // You can add progress tracking later
+      lastAccessed: enrollment.updatedAt,
+      imageUrl: enrollment.course.imageUrl,
+      description: enrollment.course.description
+    }));
 
     // Format the data for the dashboard
     const dashboardData = {
-      enrollments: enrollments.map((enrollment) => ({
-        id: enrollment.id,
-        status: enrollment.status,
-        course: enrollment.course,
-        enrolledAt: enrollment.createdAt,
-      })),
+      courses,
+      stats: {
+        totalCourses: courses.length,
+        completedCourses: courses.filter(c => c.status === "COMPLETED").length,
+        inProgressCourses: courses.filter(c => c.status === "ACTIVE").length,
+        totalEarnings,
+        referralEarnings
+      },
       recentPayments: payments.map((payment) => ({
         id: payment.id,
         amount: payment.amount,
         currency: payment.currency,
         status: payment.status,
         courseName: payment.course.title,
+        coursePrice: payment.course.price,
         date: payment.createdAt,
       })),
       referralStats: {
+        referralCode: session.user.referralCode,
         totalReferrals: referralStats?.totalReferrals || 0,
         activeReferrals: referralStats?.activeReferrals || 0,
         earnings: referralStats?.earnings || 0,
-      },
-      activities: latestActivities?.profile?.activities || [],
+        referredUsers: referredUsers.map(user => ({
+          name: user.name,
+          email: user.email,
+          joinedAt: user.createdAt,
+          totalSpent: user.payments.reduce((sum, p) => sum + p.amount, 0),
+          purchases: user.payments.map(p => ({
+            courseName: p.course.title,
+            amount: p.amount,
+            date: p.createdAt
+          }))
+        }))
+      }
     };
 
     return NextResponse.json(dashboardData);

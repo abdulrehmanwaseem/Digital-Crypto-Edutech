@@ -25,9 +25,11 @@ model User {
   enrollments   Enrollment[]
   profile       Profile?
   referralStats ReferralStats?
+  referral      Referral?
   payments      Payment[]
 
   @@index([email])
+  @@index([referralCode])
 }
 
 model Account {
@@ -79,20 +81,26 @@ model Profile {
 }
 
 model Course {
-  id          String   @id @default(cuid())
-  title       String
-  description String
-  imageUrl    String
-  price       Float
-  published   Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String   @id @default(cuid())
+  title          String
+  description    String
+  imageUrl       String
+  price          Float
+  duration       String
+  features       String[]
+  stipend        Json?
+  referralBonus  Json
+  published      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  enrollments Enrollment[]
-  payments    Payment[]
+  enrollments    Enrollment[]
+  payments       Payment[]
 
   @@index([title])
 }
+
+
 
 model Enrollment {
   id        String   @id @default(cuid())
@@ -108,25 +116,54 @@ model Enrollment {
   @@unique([userId, courseId])
   @@index([userId])
   @@index([courseId])
+  @@index([status])
 }
 
-model Payment {
-  id            String        @id @default(cuid())
-  userId        String
-  courseId      String
-  amount        Float
-  currency      String        @default("USD")
-  status        PaymentStatus @default(PENDING)
-  proofImageUrl String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+enum PaymentStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  REFUNDED
+}
 
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+model Payment {
+  id              String        @id @default(cuid())
+  userId          String
+  courseId        String
+  amount          Float
+  currency        String        @default("USD")
+  status          PaymentStatus @default(PENDING)
+  proofImageUrl   String?
+  transactionId   String?      @unique
+  referralCode   String?  @unique @map("referralCode") // Check this line 👀
+  processingError String?
+  processedAt     DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id])
+  course   Course    @relation(fields: [courseId], references: [id])
+  referral Referral? @relation(fields: [referralCode], references: [code]) // Foreign key reference 👀
 
   @@index([userId])
   @@index([courseId])
   @@index([status])
+}
+
+model Referral {
+  code            String    @id
+  userId          String    @unique
+  totalReferrals  Int       @default(0)
+  activeReferrals Int       @default(0)
+  earnings        Float     @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  user     User      @relation(fields: [userId], references: [id])
+  payments Payment[]
+
+  @@index([userId])
 }
 
 model ReferralStats {
@@ -140,19 +177,13 @@ model ReferralStats {
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([earnings])
 }
 
 enum Role {
   USER
   ADMIN
 }
-
-enum PaymentStatus {
-  PENDING
-  VERIFIED
-  REJECTED
-}
-
 enum EnrollmentStatus {
   PENDING
   ACTIVE
