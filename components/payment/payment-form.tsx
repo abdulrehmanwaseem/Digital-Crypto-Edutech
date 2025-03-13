@@ -1,38 +1,40 @@
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { toast } from "sonner"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Icons } from "@/components/icons"
-import { CloudinaryUploadWidget } from "@/components/cloudinary-upload-widget"
-import { Input } from "@/components/ui/input"
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Icons } from "@/components/icons";
+import { CloudinaryUploadWidget } from "@/components/cloudinary-upload-widget";
+import { Input } from "@/components/ui/input";
 
 interface PaymentFormProps {
-  courseId: string
-  courseTitle: string
-  amount: number
-  onSuccess?: () => void
+  courseId: string;
+  courseTitle: string;
+  amount: number;
+  onSuccess?: () => void;
 }
 
 export function PaymentForm({
   courseId,
   courseTitle,
   amount,
-  onSuccess
+  onSuccess,
 }: PaymentFormProps) {
-  const router = useRouter()
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [proofImageUrl, setProofImageUrl] = useState<string>()
-  const [referralCode, setReferralCode] = useState("")
-  const [referralValid, setReferralValid] = useState(false)
-  const [referrerId, setReferrerId] = useState<string>()
-  const [transactionId, setTransactionId] = useState("")
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [proofImageUrl, setProofImageUrl] = useState<string>();
+  const [referralCode, setReferralCode] = useState("");
+  const [referralValid, setReferralValid] = useState(false);
+  const [referrerId, setReferrerId] = useState<string>();
+  const [transactionId, setTransactionId] = useState("");
 
   const validateReferralCode = async (code: string) => {
     if (!code) {
-      setReferralValid(false)
-      setReferrerId(undefined)
-      return
+      setReferralValid(false);
+      setReferrerId(undefined);
+      return;
     }
 
     try {
@@ -40,40 +42,40 @@ export function PaymentForm({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code }),
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
       if (response.ok && data.valid) {
-        setReferralValid(true)
-        setReferrerId(data.referrerId)
-        toast.success("Valid referral code!")
+        setReferralValid(true);
+        setReferrerId(data.referrerId);
+        toast.success("Valid referral code!");
       } else {
-        setReferralValid(false)
-        setReferrerId(undefined)
-        if (code) toast.error("Invalid referral code")
+        setReferralValid(false);
+        setReferrerId(undefined);
+        if (code) toast.error("Invalid referral code");
       }
     } catch (error) {
-      console.error("Referral validation error:", error)
-      setReferralValid(false)
-      setReferrerId(undefined)
+      console.error("Referral validation error:", error);
+      setReferralValid(false);
+      setReferrerId(undefined);
     }
-  }
+  };
 
   const submitPayment = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
+    e.preventDefault();
+
     if (!proofImageUrl) {
-      toast.error("Please upload payment proof")
-      return
+      toast.error("Please upload payment proof");
+      return;
     }
 
     if (!transactionId.trim()) {
-      toast.error("Please enter the transaction ID")
-      return
+      toast.error("Please enter the transaction ID");
+      return;
     }
 
     try {
-      setIsSubmitting(true)
+      setIsSubmitting(true);
 
       const response = await fetch("/api/payments", {
         method: "POST",
@@ -83,30 +85,30 @@ export function PaymentForm({
           amount,
           proofImageUrl,
           transactionId: transactionId.trim(),
-          referrerId: referralValid ? referrerId : undefined
+          referrerId: referralValid ? referrerId : undefined,
         }),
-      })
+      });
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || "Failed to process payment")
+        const error = await response.json();
+        throw new Error(error.message || "Failed to process payment");
       }
 
-      toast.success("Payment submitted successfully")
-      onSuccess?.()
-      router.refresh()
+      toast.success("Payment submitted successfully");
+      onSuccess?.();
+      router.refresh();
     } catch (error) {
-      console.error("Payment Error:", error)
-      toast.error("Failed to process payment")
+      console.error("Payment Error:", error);
+      toast.error("Failed to process payment");
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   const handleUpload = (url: string) => {
-    setProofImageUrl(url)
-    toast.success("Payment proof uploaded successfully")
-  }
+    setProofImageUrl(url);
+    toast.success("Payment proof uploaded successfully");
+  };
 
   return (
     <form onSubmit={submitPayment}>
@@ -144,8 +146,8 @@ export function PaymentForm({
                 variant="ghost"
                 size="sm"
                 onClick={() => {
-                  navigator.clipboard.writeText("0x1234...5678")
-                  toast.success("Wallet address copied")
+                  navigator.clipboard.writeText("0x1234...5678");
+                  toast.success("Wallet address copied");
                 }}
               >
                 <Icons.copy className="h-4 w-4" />
@@ -197,8 +199,8 @@ export function PaymentForm({
                 placeholder="Enter referral code"
                 value={referralCode}
                 onChange={(e) => {
-                  setReferralCode(e.target.value)
-                  validateReferralCode(e.target.value)
+                  setReferralCode(e.target.value);
+                  validateReferralCode(e.target.value);
                 }}
               />
               {referralCode && (
@@ -230,5 +232,5 @@ export function PaymentForm({
         </div>
       </Card>
     </form>
-  )
+  );
 }

@@ -1,29 +1,31 @@
-import { useEffect, useState } from "react"
-import Image from "next/image"
-import { toast } from "sonner"
-import { format } from "date-fns"
+"use client";
+
+import { useEffect, useState } from "react";
+import Image from "next/image";
+import { toast } from "sonner";
+import { format } from "date-fns";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Icons } from "@/components/icons"
-import { cn } from "@/lib/utils"
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Icons } from "@/components/icons";
+import { cn } from "@/lib/utils";
 
 interface Payment {
-  id: string
-  amount: number
-  currency: string
-  status: "PENDING" | "VERIFIED" | "REJECTED"
-  proofImageUrl?: string
-  createdAt: string
+  id: string;
+  amount: number;
+  currency: string;
+  status: "PENDING" | "VERIFIED" | "REJECTED";
+  proofImageUrl?: string;
+  createdAt: string;
   course: {
-    title: string
-    imageUrl: string
-  }
+    title: string;
+    imageUrl: string;
+  };
 }
 
 const statusConfig = {
@@ -39,37 +41,37 @@ const statusConfig = {
     color: "bg-red-100 text-red-800",
     icon: Icons.close,
   },
-}
+};
 
 export function PaymentHistory() {
-  const [payments, setPayments] = useState<Payment[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchPayments = async () => {
       try {
-        const response = await fetch("/api/payments")
-        if (!response.ok) throw new Error("Failed to fetch payments")
-        
-        const data = await response.json()
-        setPayments(data)
-      } catch (error) {
-        console.error("Fetch Payments Error:", error)
-        toast.error("Failed to load payment history")
-      } finally {
-        setIsLoading(false)
-      }
-    }
+        const response = await fetch("/api/payments");
+        if (!response.ok) throw new Error("Failed to fetch payments");
 
-    fetchPayments()
-  }, [])
+        const data = await response.json();
+        setPayments(data);
+      } catch (error) {
+        console.error("Fetch Payments Error:", error);
+        toast.error("Failed to load payment history");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPayments();
+  }, []);
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
         <Icons.spinner className="h-8 w-8 animate-spin" />
       </div>
-    )
+    );
   }
 
   if (payments.length === 0) {
@@ -81,7 +83,7 @@ export function PaymentHistory() {
           Your payment history will appear here once you make a purchase
         </p>
       </div>
-    )
+    );
   }
 
   return (
@@ -95,7 +97,7 @@ export function PaymentHistory() {
       <CardContent>
         <div className="space-y-6">
           {payments.map((payment) => {
-            const StatusIcon = statusConfig[payment.status].icon
+            const StatusIcon = statusConfig[payment.status].icon;
             return (
               <div
                 key={payment.id}
@@ -132,7 +134,9 @@ export function PaymentHistory() {
                     </p>
                     {payment.proofImageUrl && (
                       <button
-                        onClick={() => window.open(payment.proofImageUrl, "_blank")}
+                        onClick={() =>
+                          window.open(payment.proofImageUrl, "_blank")
+                        }
                         className="text-sm text-primary hover:underline"
                       >
                         View Receipt
@@ -141,10 +145,10 @@ export function PaymentHistory() {
                   </div>
                 </div>
               </div>
-            )
+            );
           })}
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
