@@ -7,12 +7,7 @@ import { Role } from "@prisma/client";
 
 const adapter = PrismaAdapter(prisma);
 
-export const {
-  handlers,
-  auth,
-  signIn,
-  signOut,
-} = NextAuth({
+export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
   adapter,
   session: { strategy: "jwt" },
@@ -26,20 +21,22 @@ export const {
       if (!token.sub) return token;
       const existingUser = await getUserById(token.sub);
       if (!existingUser) return token;
-      
+
       return {
         ...token,
         id: existingUser.id,
         role: existingUser.role,
         occupation: existingUser.occupation,
         referralCode: existingUser.referralCode || undefined,
-        profile: existingUser.profile ? {
-          avatar: existingUser.profile.avatar,
-          bio: existingUser.profile.bio,
-          location: existingUser.profile.location,
-          achievements: existingUser.profile.achievements,
-          activities: existingUser.profile.activities,
-        } : undefined,
+        profile: existingUser.profile
+          ? {
+              avatar: existingUser.profile.avatar,
+              bio: existingUser.profile.bio,
+              location: existingUser.profile.location,
+              achievements: existingUser.profile.achievements,
+              activities: existingUser.profile.activities,
+            }
+          : undefined,
       };
     },
     async session({ session, token }) {
@@ -51,13 +48,15 @@ export const {
           role: token.role as Role,
           occupation: token.occupation as string,
           referralCode: token.referralCode as string | undefined,
-          profile: token.profile as {
-            avatar: string | null;
-            bio: string | null;
-            location: string | null;
-            achievements: any;
-            activities: any;
-          } | undefined,
+          profile: token.profile as
+            | {
+                avatar: string | null;
+                bio: string | null;
+                location: string | null;
+                achievements: any;
+                activities: any;
+              }
+            | undefined,
         },
       };
     },
