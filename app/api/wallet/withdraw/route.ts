@@ -10,11 +10,13 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { amount, paymentMethod, accountDetails } = body;
+    const { amount, method, details } = body;
+    console.log(body, "TEST");
 
     const wallet = await prisma.wallet.findUnique({
       where: { userId: session.user.id },
     });
+    console.log(wallet, session, "TEST");
 
     if (!wallet || wallet.balance < amount) {
       return NextResponse.json(
@@ -28,14 +30,15 @@ export async function POST(request: Request) {
         userId: session.user.id,
         walletId: wallet.id,
         amount,
-        paymentMethod,
-        accountDetails,
+        paymentMethod: method,
+        accountDetails: details,
         status: "PENDING",
       },
     });
 
     return NextResponse.json(withdrawal);
   } catch (error) {
+    console.log(error);
     return NextResponse.json(
       { error: "Failed to create withdrawal request" },
       { status: 500 }

@@ -26,9 +26,11 @@ import {
 } from "lucide-react";
 import { useFocusTrap } from "@/hooks/use-focus-trap";
 import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function WalletOverview() {
   const [wallet, setWallet] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isWithdrawDialogOpen, setIsWithdrawDialogOpen] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [isWithdrawing, setIsWithdrawing] = useState(false);
@@ -68,6 +70,7 @@ export function WalletOverview() {
 
   const fetchWallet = async () => {
     try {
+      setIsLoading(true);
       const response = await fetch("/api/wallet");
       if (!response.ok) throw new Error("Failed to fetch wallet");
       const data = await response.json();
@@ -78,6 +81,8 @@ export function WalletOverview() {
         title: "Failed to load wallet",
         description: "Please try again later",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -150,6 +155,59 @@ export function WalletOverview() {
     setWithdrawalMethod((prev) => ({ ...prev, type: method }));
     setIsWithdrawDialogOpen(true);
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        {/* Loading Skeleton for Wallet Summary */}
+        <div className="grid gap-4 md:grid-cols-3">
+          {[...Array(3)].map((_, i) => (
+            <Card className="p-6" key={i}>
+              <div className="flex items-center gap-4">
+                <Skeleton className="h-8 w-8 rounded" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-6 w-32" />
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+
+        {/* Loading Skeleton for Quick Actions */}
+        <Card className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <Skeleton className="h-6 w-32" />
+            <div className="flex gap-2">
+              <Skeleton className="h-9 w-32" />
+              <Skeleton className="h-9 w-32" />
+            </div>
+          </div>
+          <Separator className="mb-6" />
+
+          {/* Loading Skeleton for Transactions */}
+          <div className="space-y-4">
+            <Skeleton className="h-5 w-36" />
+            {[...Array(3)].map((_, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between py-3 border-b last:border-0"
+              >
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-3 w-32" />
+                </div>
+                <div className="text-right space-y-2">
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-3 w-24" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
