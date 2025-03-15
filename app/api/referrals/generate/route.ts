@@ -1,25 +1,28 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { getReferralStats } from "@/services/referral.service";
+import { createReferralCode } from "@/services/referral.service";
 
-export async function GET(request: Request) {
+export async function POST(request: Request) {
   try {
     const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const stats = await getReferralStats(session.user.id);
+    const referral = await createReferralCode(session.user.id);
 
-    return NextResponse.json(stats);
+    return NextResponse.json({
+      message: "Referral code generated successfully",
+      referral,
+    });
   } catch (error) {
-    console.error("Referral Stats API Error:", error);
+    console.error("Generate Referral API Error:", error);
     return NextResponse.json(
       {
         error:
           error instanceof Error
             ? error.message
-            : "Failed to fetch referral stats",
+            : "Failed to generate referral code",
       },
       { status: 500 }
     );

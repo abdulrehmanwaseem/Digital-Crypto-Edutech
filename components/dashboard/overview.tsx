@@ -1,11 +1,14 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Icons } from "@/components/icons"
+"use client";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BookOpen, DollarSign, Users, TrendingUp } from "lucide-react";
 
 interface DashboardStats {
-  enrollments: number
-  activeEnrollments: number
-  totalSpent: number
-  referralEarnings: number
+  totalCourses: number;
+  completedCourses: number;
+  inProgressCourses: number;
+  totalEarnings: number;
+  referralEarnings: number;
 }
 
 export function DashboardOverview({ stats }: { stats: DashboardStats }) {
@@ -13,62 +16,58 @@ export function DashboardOverview({ stats }: { stats: DashboardStats }) {
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">
-            Total Enrollments
-          </CardTitle>
-          <Icons.book className="h-4 w-4 text-muted-foreground" />
+          <CardTitle className="text-sm font-medium">Total Courses</CardTitle>
+          <BookOpen className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{stats.enrollments}</div>
+          <div className="text-2xl font-bold">{stats.totalCourses}</div>
           <p className="text-xs text-muted-foreground">
-            {stats.activeEnrollments} active courses
+            {stats.inProgressCourses} in progress
           </p>
         </CardContent>
       </Card>
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">
-            Total Spent
-          </CardTitle>
-          <Icons.wallet className="h-4 w-4 text-muted-foreground" />
+          <CardTitle className="text-sm font-medium">Course Progress</CardTitle>
+          <TrendingUp className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">${stats.totalSpent}</div>
+          <div className="text-2xl font-bold">
+            {stats.totalCourses > 0
+              ? Math.round((stats.completedCourses / stats.totalCourses) * 100)
+              : 0}
+            %
+          </div>
           <p className="text-xs text-muted-foreground">
-            Lifetime course purchases
+            {stats.completedCourses} courses completed
           </p>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Total Spendings</CardTitle>
+          <DollarSign className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">${stats.totalEarnings}</div>
+          <p className="text-xs text-muted-foreground">Lifetime earnings</p>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">
             Referral Earnings
           </CardTitle>
-          <Icons.users className="h-4 w-4 text-muted-foreground" />
+          <Users className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">${stats.referralEarnings}</div>
-          <p className="text-xs text-muted-foreground">
-            From successful referrals
-          </p>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">
-            Learning Progress
-          </CardTitle>
-          <Icons.chart className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">
-            {Math.round((stats.activeEnrollments / stats.enrollments) * 100)}%
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Course completion rate
-          </p>
+          <p className="text-xs text-muted-foreground">From referrals</p>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

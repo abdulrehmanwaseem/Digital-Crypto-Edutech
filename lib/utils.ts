@@ -11,15 +11,33 @@ export const currentUser = async () => {
   return session?.user;
 };
 
-export const generateReferralCode = () => {
-  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  const length = 8;
-  let code = '';
-  
-  for (let i = 0; i < length; i++) {
+export function generateReferralCode(): string {
+  const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  const codeLength = 8;
+  let code = "";
+
+  for (let i = 0; i < codeLength; i++) {
     const randomIndex = Math.floor(Math.random() * characters.length);
     code += characters[randomIndex];
   }
-  
+
   return code;
-};
+}
+
+export function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(amount);
+}
+
+export function formatDate(date: string | Date): string {
+  return new Intl.DateTimeFormat("en-US", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(date));
+}
+
+export function formatNumber(number: number): string {
+  return new Intl.NumberFormat("en-US").format(number);
+}

@@ -20,6 +20,7 @@ model User {
   referralCode  String?   @unique
   referredBy    String?
 
+  wallet         Wallet?
   accounts      Account[]
   sessions      Session[]
   enrollments   Enrollment[]
@@ -27,6 +28,7 @@ model User {
   referralStats ReferralStats?
   referral      Referral?
   payments      Payment[]
+  withdrawals    Withdrawal[]
 
   @@index([email])
   @@index([referralCode])
@@ -60,6 +62,65 @@ model Session {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model Wallet {
+  id            String      @id @default(cuid())
+  userId        String      @unique
+  balance       Float       @default(0)
+  referralBonus Float       @default(0)
+  stipendBonus  Float       @default(0)
+  user          User        @relation(fields: [userId], references: [id])
+  transactions  WalletTransaction[]
+  withdrawals   Withdrawal[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model WalletTransaction {
+  id            String    @id @default(cuid())
+  walletId      String
+  amount        Float
+  type          TransactionType
+  status        TransactionStatus @default(PENDING)
+  description   String?
+  wallet        Wallet    @relation(fields: [walletId], references: [id])
+  createdAt     DateTime  @default(now())
+}
+
+model Withdrawal {
+  id            String    @id @default(cuid())
+  userId        String
+  walletId      String
+  amount        Float
+  status        WithdrawalStatus @default(PENDING)
+  paymentMethod String
+  accountDetails Json
+  notes         String?
+  processedAt   DateTime?
+  user          User      @relation(fields: [userId], references: [id])
+  wallet        Wallet    @relation(fields: [walletId], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+enum TransactionType {
+  REFERRAL_BONUS
+  STIPEND
+  WITHDRAWAL
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum WithdrawalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
 }
 
 model Profile {
@@ -100,8 +161,6 @@ model Course {
   @@index([title])
 }
 
-
-
 model Enrollment {
   id        String   @id @default(cuid())
   userId    String
@@ -125,7 +184,6 @@ enum PaymentStatus {
   REJECTED
   REFUNDED
 }
-
 
 model Payment {
   id              String        @id @default(cuid())

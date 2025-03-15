@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
+import { processReferralBonus } from "@/services/referral.service";
 
 export async function PATCH(
   request: Request,
@@ -12,12 +13,11 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { action, notes } = body;
+    const { status } = await request.json();
 
-    if (!action) {
+    if (!status || !["VERIFIED", "REJECTED"].includes(status)) {
       return NextResponse.json(
-        { error: "Action is required" },
+        { error: "Invalid status provided" },
         { status: 400 }
       );
     }
@@ -25,12 +25,8 @@ export async function PATCH(
     const payment = await prisma.payment.findUnique({
       where: { id: params.id },
       include: {
-        user: {
-          include: {
-            wallet: true,
-          },
-        },
         course: true,
+        user: true,
       },
     });
 
@@ -40,36 +36,27 @@ export async function PATCH(
 
     if (payment.status !== "PENDING") {
       return NextResponse.json(
-        { error: "Can only process pending payments" },
+        { error: "Payment has already been processed" },
         { status: 400 }
       );
     }
 
-    await prisma.$transaction(async (tx) => {
+    const updatedPayment = await prisma.$transaction(async (tx) => {
       // Update payment status
-      await tx.payment.update({
+      const updated = await tx.payment.update({
         where: { id: params.id },
         data: {
-          status: action === "APPROVE" ? "VERIFIED" : "REJECTED",
+          status,
           processedAt: new Date(),
         },
       });
 
-      if (action === "APPROVE") {
-        // Create or update enrollment
-        await tx.enrollment.upsert({
-          where: {
-            userId_courseId: {
-              userId: payment.userId,
-              courseId: payment.courseId,
-            },
-          },
-          create: {
+      if (status === "VERIFIED") {
+        // Create enrollment
+        await tx.enrollment.create({
+          data: {
             userId: payment.userId,
             courseId: payment.courseId,
-            status: "ACTIVE",
-          },
-          update: {
             status: "ACTIVE",
           },
         });
@@ -81,24 +68,10 @@ export async function PATCH(
             maxAmount: number;
           };
 
-          if (!referralBonus || !referralBonus.percentage) {
-            console.error("Invalid referral bonus structure:", referralBonus);
-            return;
-          }
-
           const bonusAmount = Math.min(
             (payment.amount * referralBonus.percentage) / 100,
-            referralBonus.maxAmount || Infinity
+            referralBonus.maxAmount
           );
-
-          if (isNaN(bonusAmount)) {
-            console.error("Invalid bonus amount calculation:", {
-              amount: payment.amount,
-              percentage: referralBonus.percentage,
-              maxAmount: referralBonus.maxAmount,
-            });
-            return;
-          }
 
           // Get or create wallet for referrer
           const referrerWallet = await tx.wallet.upsert({
@@ -124,6 +97,8 @@ export async function PATCH(
               earnings: bonusAmount,
             },
             update: {
+              totalReferrals: { increment: 1 },
+              activeReferrals: { increment: 1 },
               earnings: { increment: bonusAmount },
             },
           });
@@ -140,13 +115,16 @@ export async function PATCH(
           });
         }
       }
+
+      return updated;
     });
 
     return NextResponse.json({
-      message: `Payment ${action.toLowerCase()}d successfully`,
+      message: `Payment ${status.toLowerCase()}`,
+      payment: updatedPayment,
     });
   } catch (error) {
-    console.error("Process Payment Error:", error);
+    console.error("Process Payment API Error:", error);
     return NextResponse.json(
       { error: "Failed to process payment" },
       { status: 500 }

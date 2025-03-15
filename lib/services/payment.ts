@@ -4,11 +4,11 @@ export class PaymentService {
   static async calculateCommissionRate(userId: string): Promise<number> {
     const stats = await prisma.referralStats.findUnique({
       where: { userId },
-      select: { earnings: true }
+      select: { earnings: true },
     });
 
     const earnings = stats?.earnings || 0;
-    
+
     if (earnings >= 10000) return 20;
     if (earnings >= 5000) return 15;
     if (earnings >= 1000) return 12;
@@ -26,7 +26,11 @@ export class PaymentService {
       // Get user with referral info
       const user = await tx.user.findUnique({
         where: { id: data.userId },
-        select: { id: true, referredBy: true }
+        select: {
+          id: true,
+          referredBy: true,
+          referralCode: true,
+        },
       });
 
       if (!user) {
@@ -36,7 +40,6 @@ export class PaymentService {
       // Create payment record
       const payment = await tx.payment.create({
         data: {
-          
           userId: data.userId,
           courseId: data.courseId,
           amount: data.amount,
@@ -57,30 +60,49 @@ export class PaymentService {
 
       // Handle referral commission if user was referred
       if (user.referredBy) {
-        const referrer = await tx.user.findUnique({
-          where: { referralCode: user.referredBy },
-          select: { id: true }
+        const commissionRate = await PaymentService.calculateCommissionRate(
+          user.referredBy
+        );
+        const commission = (data.amount * commissionRate) / 100;
+
+        // Update referrer's wallet
+        const wallet = await tx.wallet.upsert({
+          where: { userId: user.referredBy },
+          create: {
+            userId: user.referredBy,
+            balance: commission,
+            referralBonus: commission,
+          },
+          update: {
+            balance: { increment: commission },
+            referralBonus: { increment: commission },
+          },
         });
 
-        if (referrer) {
-          const commissionRate = await this.calculateCommissionRate(referrer.id);
-          const commission = (data.amount * commissionRate) / 100;
+        // Update referral stats
+        await tx.referralStats.upsert({
+          where: { userId: user.referredBy },
+          create: {
+            userId: user.referredBy,
+            totalReferrals: 1,
+            activeReferrals: 1,
+            earnings: commission,
+          },
+          update: {
+            earnings: { increment: commission },
+          },
+        });
 
-          await tx.referralStats.upsert({
-            where: { userId: referrer.id },
-            create: {
-              userId: referrer.id,
-              totalReferrals: 1,
-              activeReferrals: 1,
-              earnings: commission
-            },
-            update: {
-              totalReferrals: { increment: 1 },
-              activeReferrals: { increment: 1 },
-              earnings: { increment: commission }
-            }
-          });
-        }
+        // Create transaction record
+        await tx.walletTransaction.create({
+          data: {
+            walletId: wallet.id,
+            amount: commission,
+            type: "REFERRAL_BONUS",
+            status: "COMPLETED",
+            description: `Referral commission for course purchase`,
+          },
+        });
       }
 
       return payment;
@@ -93,9 +115,9 @@ export class PaymentService {
         where: { id: paymentId },
         include: {
           user: {
-            select: { referredBy: true }
-          }
-        }
+            select: { referredBy: true },
+          },
+        },
       });
 
       if (!payment) {
@@ -105,7 +127,7 @@ export class PaymentService {
       // Update payment status
       await tx.payment.update({
         where: { id: paymentId },
-        data: { status: "VERIFIED" }
+        data: { status: "VERIFIED" },
       });
 
       // Update enrollment status
@@ -113,22 +135,22 @@ export class PaymentService {
         where: {
           userId: payment.userId,
           courseId: payment.courseId,
-          status: "PENDING"
+          status: "PENDING",
         },
-        data: { status: "ACTIVE" }
+        data: { status: "ACTIVE" },
       });
 
       // Update referral stats if applicable
       if (payment.user.referredBy) {
         const referrer = await tx.user.findUnique({
           where: { referralCode: payment.user.referredBy },
-          select: { id: true }
+          select: { id: true },
         });
 
         if (referrer) {
           await tx.referralStats.update({
             where: { userId: referrer.id },
-            data: { activeReferrals: { increment: 1 } }
+            data: { activeReferrals: { increment: 1 } },
           });
         }
       }
@@ -140,7 +162,7 @@ export class PaymentService {
   static async rejectPayment(paymentId: string) {
     return prisma.$transaction(async (tx) => {
       const payment = await tx.payment.findUnique({
-        where: { id: paymentId }
+        where: { id: paymentId },
       });
 
       if (!payment) {
@@ -150,7 +172,7 @@ export class PaymentService {
       // Update payment status
       await tx.payment.update({
         where: { id: paymentId },
-        data: { status: "REJECTED" }
+        data: { status: "REJECTED" },
       });
 
       // Delete enrollment record
@@ -158,8 +180,8 @@ export class PaymentService {
         where: {
           userId: payment.userId,
           courseId: payment.courseId,
-          status: "PENDING"
-        }
+          status: "PENDING",
+        },
       });
 
       return payment;

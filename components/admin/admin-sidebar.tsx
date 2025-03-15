@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { cn } from "@/lib/utils"
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
 import {
   Users,
   LayoutDashboard,
@@ -10,7 +10,8 @@ import {
   Settings,
   FileText,
   DollarSign,
-} from "lucide-react"
+  Wallet,
+} from "lucide-react";
 
 const adminRoutes = [
   {
@@ -24,9 +25,9 @@ const adminRoutes = [
     icon: Users,
   },
   {
-    href: "/admin/courses",
-    label: "Courses",
-    icon: BookOpen,
+    href: "/admin/withdrawals",
+    label: "Withdrawals",
+    icon: Wallet,
   },
   {
     href: "/admin/transactions",
@@ -38,10 +39,10 @@ const adminRoutes = [
     label: "Settings",
     icon: Settings,
   },
-]
+];
 
 export function AdminSidebar() {
-  const pathname = usePathname()
+  const pathname = usePathname();
 
   return (
     <div className="w-64 bg-card h-screen border-r">
@@ -50,7 +51,7 @@ export function AdminSidebar() {
       </div>
       <nav className="space-y-1 px-3">
         {adminRoutes.map((route) => {
-          const Icon = route.icon
+          const Icon = route.icon;
           return (
             <Link
               key={route.href}
@@ -65,9 +66,9 @@ export function AdminSidebar() {
               <Icon className="h-5 w-5" />
               {route.label}
             </Link>
-          )
+          );
         })}
       </nav>
     </div>
-  )
-} 
+  );
+}

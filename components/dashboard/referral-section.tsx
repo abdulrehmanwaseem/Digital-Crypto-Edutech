@@ -8,7 +8,7 @@ import { Users, DollarSign, UserCheck, Copy, ExternalLink } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
 interface ReferralData {
-  referralCode: string;
+  code: string;
   totalReferrals: number;
   activeReferrals: number;
   earnings: number;
@@ -16,7 +16,6 @@ interface ReferralData {
     name: string;
     email: string;
     joinedAt: string;
-    totalSpent: number;
   }>;
 }
 
@@ -47,7 +46,7 @@ export function ReferralSection() {
   };
 
   const copyReferralLink = () => {
-    const link = `${window.location.origin}/register?ref=${referralData?.referralCode}`;
+    const link = `${window.location.origin}/register?ref=${referralData?.code}`;
     navigator.clipboard.writeText(link);
     toast({
       title: "Success",
@@ -138,7 +137,7 @@ export function ReferralSection() {
         <CardContent className="space-y-4">
           <div className="flex items-center gap-2">
             <code className="flex-1 rounded bg-muted px-2 py-1">
-              {`${window.location.origin}/register?ref=${referralData.referralCode}`}
+              {`${window.location.origin}/register?ref=${referralData.code}`}
             </code>
             <Button variant="outline" size="icon" onClick={copyReferralLink}>
               <Copy className="h-4 w-4" />
@@ -155,7 +154,7 @@ export function ReferralSection() {
         </CardContent>
       </Card>
 
-      {referralData.referredUsers.length > 0 && (
+      {referralData?.referredUsers?.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>Referred Users</CardTitle>
@@ -174,9 +173,7 @@ export function ReferralSection() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="font-medium">
-                      ${user.totalSpent.toFixed(2)}
-                    </div>
+                    <div className="font-medium">${user?.totalSpent}</div>
                     <div className="text-sm text-muted-foreground">
                       Total Spent
                     </div>

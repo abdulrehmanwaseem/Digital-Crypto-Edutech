@@ -1,8 +1,7 @@
 "use client";
 
-import { DashboardOverview } from "@/components/dashboard/overview";
-import { ReferralSection } from "@/components/dashboard/referral-section";
-import { WalletOverview } from "@/components/dashboard/wallet-overview";
+import { useState, useEffect } from "react";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,61 +12,41 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
 import {
-  ArrowLeft,
+  CheckCircle,
+  Landmark,
+  Wallet,
+  CreditCard,
+  ArrowUpRight,
+  Coins,
+  Gift,
   DollarSign,
   Loader2,
-  Landmark,
-  Wallet as WalletIcon,
 } from "lucide-react";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { PaymentMethodCard } from "@/components/dashboard/payment-method-card";
-import { useModalRoot } from "@/hooks/use-modal-root";
 import { useFocusTrap } from "@/hooks/use-focus-trap";
+import { useToast } from "@/hooks/use-toast";
 
-interface Course {
-  id: string;
-  title: string;
-  progress: number;
-  status: string;
-  lastAccessed: string | null;
-}
-
-interface WithdrawalMethod {
-  type: "bank" | "crypto";
-  bankDetails?: {
-    name: string;
-    bankName: string;
-    accountNo: string;
-    ifscCode: string;
-  };
-  cryptoDetails?: {
-    network: string;
-    address: string;
-  };
-}
-
-interface Withdrawal {
-  amount: number;
-  method: "bank" | "crypto";
-  details: WithdrawalMethod;
-  timestamp: string;
-  status: "pending" | "completed" | "failed";
-}
-
-export default function DashboardPage() {
-  const { data: session } = useSession();
-  const router = useRouter();
-  const [courses, setCourses] = useState<Course[]>([]);
-
-  const [isLoading, setIsLoading] = useState(true);
+export function WalletOverview() {
+  const [wallet, setWallet] = useState<any>(null);
+  const [isWithdrawDialogOpen, setIsWithdrawDialogOpen] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [isWithdrawing, setIsWithdrawing] = useState(false);
-  const [isWithdrawDialogOpen, setIsWithdrawDialogOpen] = useState(false);
-  const [withdrawalMethod, setWithdrawalMethod] = useState<WithdrawalMethod>({
+  const { toast } = useToast();
+
+  const [withdrawalMethod, setWithdrawalMethod] = useState<{
+    type: "bank" | "crypto";
+    bankDetails?: {
+      name: string;
+      bankName: string;
+      accountNo: string;
+      ifscCode: string;
+    };
+    cryptoDetails?: {
+      network: string;
+      address: string;
+    };
+  }>({
     type: "bank",
     bankDetails: {
       name: "",
@@ -81,56 +60,87 @@ export default function DashboardPage() {
     },
   });
 
-  const [dashboardStats, setDashboardStats] = useState({
-    totalCourses: 0,
-    completedCourses: 0,
-    inProgressCourses: 0,
-    totalEarnings: 0,
-    referralEarnings: 0,
-  });
-
-  const modalRoot = useModalRoot();
   const focusTrapRef = useFocusTrap(isWithdrawDialogOpen);
 
   useEffect(() => {
-    if (!session) {
-      router.push("/login");
-      return;
-    }
-    fetchUserData();
-  }, [session, router]);
+    fetchWallet();
+  }, []);
 
-  const fetchUserData = async () => {
+  const fetchWallet = async () => {
     try {
-      const response = await fetch("/api/dashboard");
-      if (!response.ok) throw new Error("Failed to fetch dashboard data");
+      const response = await fetch("/api/wallet");
+      if (!response.ok) throw new Error("Failed to fetch wallet");
       const data = await response.json();
-      setCourses(data.courses);
-      setDashboardStats(data.stats);
+      setWallet(data);
     } catch (error) {
-      console.error("Error fetching dashboard data:", error);
-    } finally {
-      setIsLoading(false);
+      toast({
+        variant: "destructive",
+        title: "Failed to load wallet",
+        description: "Please try again later",
+      });
     }
   };
-
-  if (!session || !session.user) {
-    return null;
-  }
 
   const handleWithdrawSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!withdrawAmount || parseFloat(withdrawAmount) <= 0) {
+      toast({
+        variant: "destructive",
+        title: "Invalid Amount",
+        description: "Please enter a valid withdrawal amount",
+      });
       return;
     }
 
     try {
       setIsWithdrawing(true);
-      // Add withdrawal submission logic here
+      const details = {
+        ...(withdrawalMethod.type === "bank" && {
+          accountName: withdrawalMethod.bankDetails?.name,
+          accountNumber: withdrawalMethod.bankDetails?.accountNo,
+          bankName: withdrawalMethod.bankDetails?.bankName,
+          ifscCode: withdrawalMethod.bankDetails?.ifscCode,
+        }),
+        ...(withdrawalMethod.type === "crypto" && {
+          walletAddress: withdrawalMethod.cryptoDetails?.address,
+          network: withdrawalMethod.cryptoDetails?.network,
+        }),
+      };
+
+      const response = await fetch("/api/wallet/withdraw", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: parseFloat(withdrawAmount),
+          method: withdrawalMethod.type,
+          details,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to submit withdrawal");
+      }
+
+      toast({
+        title: "Success",
+        description:
+          data.message || "Withdrawal request submitted successfully",
+      });
       setIsWithdrawDialogOpen(false);
       setWithdrawAmount("");
+      fetchWallet();
     } catch (error) {
       console.error("Withdrawal error:", error);
+      toast({
+        variant: "destructive",
+        title: "Withdrawal Failed",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to submit withdrawal request",
+      });
     } finally {
       setIsWithdrawing(false);
     }
@@ -141,54 +151,108 @@ export default function DashboardPage() {
     setIsWithdrawDialogOpen(true);
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex justify-center items-center mb-10">
-        <Loader2 className="mr-2 h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
-
   return (
-    <div className="container py-6 space-y-6">
-      <div className="flex flex-col gap-4">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">
-            Welcome back, {session.user.name}
-          </h1>
+    <div className="space-y-6">
+      {/* Wallet Summary */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card className="p-6">
+          <div className="flex items-center gap-4">
+            <Wallet className="h-8 w-8 text-primary" />
+            <div>
+              <p className="text-sm text-muted-foreground">Total Balance</p>
+              <h3 className="text-2xl font-bold">${wallet?.balance || 0}</h3>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-center gap-4">
+            <Gift className="h-8 w-8 text-primary" />
+            <div>
+              <p className="text-sm text-muted-foreground">Referral Bonus</p>
+              <h3 className="text-2xl font-bold">
+                ${wallet?.referralBonus || 0}
+              </h3>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-center gap-4">
+            <Coins className="h-8 w-8 text-primary" />
+            <div>
+              <p className="text-sm text-muted-foreground">Stipend Bonus</p>
+              <h3 className="text-2xl font-bold">
+                ${wallet?.stipendBonus || 0}
+              </h3>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Actions */}
+      <Card className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-semibold">Quick Actions</h3>
           <div className="flex gap-2">
-            <Button variant="ghost" onClick={() => router.push("/")}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Home
+            <Button
+              variant="outline"
+              onClick={() => openWithdrawDialog("bank")}
+              className="flex items-center gap-2"
+            >
+              <Landmark className="h-4 w-4" />
+              Bank Transfer
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => openWithdrawDialog("crypto")}
+              className="flex items-center gap-2"
+            >
+              <Wallet className="h-4 w-4" />
+              Crypto Withdrawal
             </Button>
           </div>
         </div>
-        <p className="text-muted-foreground">
-          Here&apos;s an overview of your learning progress and referral
-          earnings
-        </p>
-      </div>
+        <Separator className="mb-6" />
 
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="referrals">Referral Program</TabsTrigger>
-          <TabsTrigger value="wallet">My Wallet</TabsTrigger>
-        </TabsList>
+        {/* Recent Transactions */}
+        <div className="space-y-4">
+          <h4 className="font-medium">Recent Transactions</h4>
+          {wallet?.transactions?.length ? (
+            wallet.transactions.map((tx: any) => (
+              <div
+                key={tx.id}
+                className="flex items-center justify-between py-3 border-b last:border-0"
+              >
+                <div>
+                  <p className="font-medium">{tx.type}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {tx.description}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p
+                    className={
+                      tx.amount > 0 ? "text-green-600" : "text-red-600"
+                    }
+                  >
+                    ${Math.abs(tx.amount)}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {new Date(tx.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="text-muted-foreground text-center py-4">
+              No recent transactions
+            </p>
+          )}
+        </div>
+      </Card>
 
-        <TabsContent value="overview" className="space-y-4">
-          <DashboardOverview stats={dashboardStats} />
-        </TabsContent>
-
-        <TabsContent value="referrals">
-          <ReferralSection />
-        </TabsContent>
-
-        <TabsContent value="wallet">
-          <WalletOverview />
-        </TabsContent>
-      </Tabs>
-
+      {/* Withdrawal Dialog */}
       <Dialog
         open={isWithdrawDialogOpen}
         onOpenChange={setIsWithdrawDialogOpen}

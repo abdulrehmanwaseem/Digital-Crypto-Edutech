@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { validateReferralCode } from "@/services/referral.service";
+import { applyReferralCode } from "@/services/referral.service";
 
 export async function POST(request: Request) {
   try {
@@ -18,17 +18,20 @@ export async function POST(request: Request) {
       );
     }
 
-    const referral = await validateReferralCode(code, session.user.id);
+    const referral = await applyReferralCode(code, session.user.id);
 
-    return NextResponse.json({ referral });
+    return NextResponse.json({
+      message: "Referral code applied successfully",
+      referral,
+    });
   } catch (error) {
-    console.error("Validate Referral API Error:", error);
+    console.error("Apply Referral API Error:", error);
     return NextResponse.json(
       {
         error:
           error instanceof Error
             ? error.message
-            : "Failed to validate referral code",
+            : "Failed to apply referral code",
       },
       { status: 500 }
     );

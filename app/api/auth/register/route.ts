@@ -12,8 +12,8 @@ const defaultProfile = {
   telegram: "",
   website: "",
   achievements: JSON.stringify([]),
-  activities: JSON.stringify([])
-}
+  activities: JSON.stringify([]),
+};
 
 export async function POST(req: Request) {
   try {
@@ -27,8 +27,9 @@ export async function POST(req: Request) {
       );
     }
 
-    const { email, password, name, occupation, referralCode } = validatedFields.data;
-    
+    const { email, password, name, occupation, referralCode } =
+      validatedFields.data;
+
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
@@ -44,7 +45,13 @@ export async function POST(req: Request) {
     if (referralCode) {
       const referrer = await prisma.user.findUnique({
         where: { referralCode },
+        select: {
+          id: true,
+          referralStats: true,
+          wallet: true,
+        },
       });
+
       if (!referrer) {
         return NextResponse.json(
           { error: "Invalid referral code" },
@@ -54,9 +61,15 @@ export async function POST(req: Request) {
       referredBy = referrer.id;
 
       // Update referrer's stats
-      await prisma.referralStats.update({
+      await prisma.referralStats.upsert({
         where: { userId: referrer.id },
-        data: {
+        create: {
+          userId: referrer.id,
+          totalReferrals: 1,
+          activeReferrals: 1,
+          earnings: 0,
+        },
+        update: {
           totalReferrals: { increment: 1 },
           activeReferrals: { increment: 1 },
         },
@@ -76,37 +89,51 @@ export async function POST(req: Request) {
         referredBy,
         profile: {
           create: {
-            ...defaultProfile
-          }
+            ...defaultProfile,
+          },
         },
         referralStats: {
           create: {
             totalReferrals: 0,
             activeReferrals: 0,
-            earnings: 0
-          }
-        }
+            earnings: 0,
+          },
+        },
+        wallet: {
+          create: {
+            balance: 0,
+            referralBonus: 0,
+          },
+        },
       },
       include: {
-        profile: true
-      }
+        profile: true,
+        wallet: true,
+      },
     });
 
-    return NextResponse.json({ 
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        occupation: user.occupation,
-        role: user.role,
-        referralCode: user.referralCode,
-        profile: {
-          ...user.profile,
-          achievements: user.profile?.achievements ? JSON.parse(user.profile.achievements as string) : [],
-          activities: user.profile?.activities ? JSON.parse(user.profile.activities as string) : []
-        }
-      }
-    }, { status: 201 });
+    return NextResponse.json(
+      {
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          occupation: user.occupation,
+          role: user.role,
+          referralCode: user.referralCode,
+          profile: {
+            ...user.profile,
+            achievements: user.profile?.achievements
+              ? JSON.parse(user.profile.achievements as string)
+              : [],
+            activities: user.profile?.activities
+              ? JSON.parse(user.profile.activities as string)
+              : [],
+          },
+        },
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error("Registration error:", error);
     return NextResponse.json(
