@@ -8,6 +8,7 @@ import { SessionProvider } from "next-auth/react";
 import { SiteHeader } from "@/components/site-header";
 import { currentUser } from "@/lib/utils";
 import { prisma } from "@/lib/prisma";
+import { OAuthReferral } from "@/components/auth/oauth-referral";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -43,21 +44,22 @@ export default async function RootLayout({
         <link rel="icon" href="/images/favicon.ico" />
       </head>
       <body className={inter.className}>
-        <SessionProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            suppressHydrationWarning
-          >
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <SessionProvider>
             <ToastProvider swipeDirection="right">
+              <OAuthReferral />
               <SiteHeader session={user} siteSettings={settings} />
               <main className="min-h-screen">{children}</main>
               <Footer siteSettings={settings} />
             </ToastProvider>
             <Toaster />
-          </ThemeProvider>
-        </SessionProvider>
+          </SessionProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

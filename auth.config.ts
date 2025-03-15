@@ -90,7 +90,7 @@ export const authConfig = {
           id: profile.sub,
           email: profile.email,
           name: profile.name,
-          image: profile.picture,
+          profile: { create: { avatar: profile.picture } },
           role: "USER" as Role,
           occupation: "Not specified",
         };
@@ -116,7 +116,7 @@ export const authConfig = {
   callbacks: {
     async session({ session, token }) {
       const dbUser = (await prisma.user.findUnique({
-        where: { id: token?.id },
+        where: { id: token.id as string },
         include: {
           profile: true,
           referralStats: true,
@@ -166,7 +166,7 @@ export const authConfig = {
         user,
       };
     },
-    async signIn({ user: oauthUser, account }) {
+    async signIn({ user: oauthUser, account, profile }) {
       try {
         if (!oauthUser?.email) return false;
 
