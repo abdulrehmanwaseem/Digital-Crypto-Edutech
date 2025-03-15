@@ -27,6 +27,7 @@ import { useEffect, useState } from "react";
 import { PaymentMethodCard } from "@/components/dashboard/payment-method-card";
 import { useModalRoot } from "@/hooks/use-modal-root";
 import { useFocusTrap } from "@/hooks/use-focus-trap";
+import BlurOverlay from "@/components/BlurOverlay";
 
 interface Course {
   id: string;
@@ -58,10 +59,19 @@ interface Withdrawal {
   status: "pending" | "completed" | "failed";
 }
 
+interface PaymentStatus {
+  hasPurchasedCourse: boolean;
+  isPaymentVerified: boolean;
+}
+
 export default function DashboardPage() {
   const { data: session } = useSession();
   const router = useRouter();
   const [courses, setCourses] = useState<Course[]>([]);
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus | null>(
+    null
+  );
+  const [loading, setLoading] = useState(true);
 
   const [isLoading, setIsLoading] = useState(true);
   const [withdrawAmount, setWithdrawAmount] = useState("");
@@ -99,6 +109,24 @@ export default function DashboardPage() {
     }
     fetchUserData();
   }, [session, router]);
+
+  useEffect(() => {
+    const checkPaymentStatus = async () => {
+      try {
+        const response = await fetch("/api/payment/check-status");
+        const data = await response.json();
+        setPaymentStatus(data);
+      } catch (error) {
+        console.error("Error checking payment status:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (session?.user) {
+      checkPaymentStatus();
+    }
+  }, [session]);
 
   const fetchUserData = async () => {
     try {
@@ -141,216 +169,242 @@ export default function DashboardPage() {
     setIsWithdrawDialogOpen(true);
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex justify-center items-center mb-10">
-        <Loader2 className="mr-2 h-8 w-8 animate-spin" />
-      </div>
-    );
+  if (loading) {
+    return <div>Loading...</div>;
   }
 
+  const getMessage = () => {
+    if (!paymentStatus?.hasPurchasedCourse) {
+      return "Please purchase a course plan to access dashboard insights.";
+    }
+    if (!paymentStatus?.isPaymentVerified) {
+      return "Your payment is being verified by our admin team. Please wait for approval.";
+    }
+    return "";
+  };
+
   return (
-    <div className="container py-6 space-y-6">
-      <div className="flex flex-col gap-4">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">
-            Welcome back, {session.user.name}
-          </h1>
-          <div className="flex gap-2">
-            <Button variant="ghost" onClick={() => router.push("/")}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Home
-            </Button>
+    <div className="relative">
+      <div className="container py-6 space-y-6">
+        <div className="flex flex-col gap-4">
+          <div className="flex justify-between items-center">
+            <h1 className="text-3xl font-bold">
+              Welcome back, {session.user.name}
+            </h1>
+            <div className="flex gap-2">
+              <Button variant="ghost" onClick={() => router.push("/")}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Home
+              </Button>
+            </div>
           </div>
+          <p className="text-muted-foreground">
+            Here&apos;s an overview of your learning progress and referral
+            earnings
+          </p>
         </div>
-        <p className="text-muted-foreground">
-          Here&apos;s an overview of your learning progress and referral
-          earnings
-        </p>
+
+        <Tabs defaultValue="overview" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="referrals">Referral Program</TabsTrigger>
+            <TabsTrigger value="wallet">My Wallet</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-4">
+            <DashboardOverview stats={dashboardStats} />
+          </TabsContent>
+
+          <TabsContent value="referrals">
+            <ReferralSection />
+          </TabsContent>
+
+          <TabsContent value="wallet">
+            <WalletOverview />
+          </TabsContent>
+        </Tabs>
+
+        <Dialog
+          open={isWithdrawDialogOpen}
+          onOpenChange={setIsWithdrawDialogOpen}
+        >
+          <DialogContent className="max-w-md">
+            <div ref={focusTrapRef}>
+              <DialogHeader>
+                <DialogTitle>
+                  {withdrawalMethod.type === "bank"
+                    ? "Bank Transfer"
+                    : "Crypto Withdrawal"}
+                </DialogTitle>
+                <DialogDescription>
+                  Enter the withdrawal details
+                </DialogDescription>
+              </DialogHeader>
+
+              <form
+                onSubmit={handleWithdrawSubmit}
+                className="space-y-6"
+                onClick={(e: React.MouseEvent) => e.stopPropagation()}
+              >
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Amount</label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="number"
+                      placeholder="0.00"
+                      className="pl-9"
+                      value={withdrawAmount}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        e.stopPropagation();
+                        setWithdrawAmount(e.target.value);
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {withdrawalMethod.type === "bank" ? (
+                  <div className="space-y-3">
+                    <Input
+                      placeholder="Account Holder Name"
+                      value={withdrawalMethod.bankDetails?.name}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        e.stopPropagation();
+                        setWithdrawalMethod((prev) => ({
+                          ...prev,
+                          bankDetails: {
+                            ...prev.bankDetails!,
+                            name: e.target.value,
+                          },
+                        }));
+                      }}
+                    />
+                    <Input
+                      placeholder="Bank Name"
+                      value={withdrawalMethod.bankDetails?.bankName}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        e.stopPropagation();
+                        setWithdrawalMethod((prev) => ({
+                          ...prev,
+                          bankDetails: {
+                            ...prev.bankDetails!,
+                            bankName: e.target.value,
+                          },
+                        }));
+                      }}
+                    />
+                    <Input
+                      placeholder="Account Number"
+                      value={withdrawalMethod.bankDetails?.accountNo}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        e.stopPropagation();
+                        setWithdrawalMethod((prev) => ({
+                          ...prev,
+                          bankDetails: {
+                            ...prev.bankDetails!,
+                            accountNo: e.target.value,
+                          },
+                        }));
+                      }}
+                    />
+                    <Input
+                      placeholder="IFSC Code"
+                      value={withdrawalMethod.bankDetails?.ifscCode}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        e.stopPropagation();
+                        setWithdrawalMethod((prev) => ({
+                          ...prev,
+                          bankDetails: {
+                            ...prev.bankDetails!,
+                            ifscCode: e.target.value,
+                          },
+                        }));
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <Input
+                      placeholder="Wallet Address"
+                      value={withdrawalMethod.cryptoDetails?.address}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        e.stopPropagation();
+                        setWithdrawalMethod((prev) => ({
+                          ...prev,
+                          cryptoDetails: {
+                            ...prev.cryptoDetails!,
+                            address: e.target.value,
+                          },
+                        }));
+                      }}
+                    />
+                    <Input
+                      placeholder="Network (e.g., ETH, BSC)"
+                      value={withdrawalMethod.cryptoDetails?.network}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        e.stopPropagation();
+                        setWithdrawalMethod((prev) => ({
+                          ...prev,
+                          cryptoDetails: {
+                            ...prev.cryptoDetails!,
+                            network: e.target.value,
+                          },
+                        }));
+                      }}
+                    />
+                  </div>
+                )}
+
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsWithdrawDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={
+                      isWithdrawing ||
+                      !withdrawAmount ||
+                      (withdrawalMethod.type === "bank" &&
+                        (!withdrawalMethod.bankDetails?.name ||
+                          !withdrawalMethod.bankDetails?.accountNo)) ||
+                      (withdrawalMethod.type === "crypto" &&
+                        (!withdrawalMethod.cryptoDetails?.address ||
+                          !withdrawalMethod.cryptoDetails?.network))
+                    }
+                  >
+                    {isWithdrawing && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    Withdraw
+                  </Button>
+                </DialogFooter>
+              </form>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="referrals">Referral Program</TabsTrigger>
-          <TabsTrigger value="wallet">My Wallet</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="space-y-4">
-          <DashboardOverview stats={dashboardStats} />
-        </TabsContent>
-
-        <TabsContent value="referrals">
-          <ReferralSection />
-        </TabsContent>
-
-        <TabsContent value="wallet">
-          <WalletOverview />
-        </TabsContent>
-      </Tabs>
-
-      <Dialog
-        open={isWithdrawDialogOpen}
-        onOpenChange={setIsWithdrawDialogOpen}
-      >
-        <DialogContent className="max-w-md">
-          <div ref={focusTrapRef}>
-            <DialogHeader>
-              <DialogTitle>
-                {withdrawalMethod.type === "bank"
-                  ? "Bank Transfer"
-                  : "Crypto Withdrawal"}
-              </DialogTitle>
-              <DialogDescription>
-                Enter the withdrawal details
-              </DialogDescription>
-            </DialogHeader>
-
-            <form
-              onSubmit={handleWithdrawSubmit}
-              className="space-y-6"
-              onClick={(e: React.MouseEvent) => e.stopPropagation()}
-            >
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Amount</label>
-                <div className="relative">
-                  <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="number"
-                    placeholder="0.00"
-                    className="pl-9"
-                    value={withdrawAmount}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      e.stopPropagation();
-                      setWithdrawAmount(e.target.value);
-                    }}
-                  />
-                </div>
-              </div>
-
-              {withdrawalMethod.type === "bank" ? (
-                <div className="space-y-3">
-                  <Input
-                    placeholder="Account Holder Name"
-                    value={withdrawalMethod.bankDetails?.name}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      e.stopPropagation();
-                      setWithdrawalMethod((prev) => ({
-                        ...prev,
-                        bankDetails: {
-                          ...prev.bankDetails!,
-                          name: e.target.value,
-                        },
-                      }));
-                    }}
-                  />
-                  <Input
-                    placeholder="Bank Name"
-                    value={withdrawalMethod.bankDetails?.bankName}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      e.stopPropagation();
-                      setWithdrawalMethod((prev) => ({
-                        ...prev,
-                        bankDetails: {
-                          ...prev.bankDetails!,
-                          bankName: e.target.value,
-                        },
-                      }));
-                    }}
-                  />
-                  <Input
-                    placeholder="Account Number"
-                    value={withdrawalMethod.bankDetails?.accountNo}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      e.stopPropagation();
-                      setWithdrawalMethod((prev) => ({
-                        ...prev,
-                        bankDetails: {
-                          ...prev.bankDetails!,
-                          accountNo: e.target.value,
-                        },
-                      }));
-                    }}
-                  />
-                  <Input
-                    placeholder="IFSC Code"
-                    value={withdrawalMethod.bankDetails?.ifscCode}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      e.stopPropagation();
-                      setWithdrawalMethod((prev) => ({
-                        ...prev,
-                        bankDetails: {
-                          ...prev.bankDetails!,
-                          ifscCode: e.target.value,
-                        },
-                      }));
-                    }}
-                  />
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <Input
-                    placeholder="Wallet Address"
-                    value={withdrawalMethod.cryptoDetails?.address}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      e.stopPropagation();
-                      setWithdrawalMethod((prev) => ({
-                        ...prev,
-                        cryptoDetails: {
-                          ...prev.cryptoDetails!,
-                          address: e.target.value,
-                        },
-                      }));
-                    }}
-                  />
-                  <Input
-                    placeholder="Network (e.g., ETH, BSC)"
-                    value={withdrawalMethod.cryptoDetails?.network}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      e.stopPropagation();
-                      setWithdrawalMethod((prev) => ({
-                        ...prev,
-                        cryptoDetails: {
-                          ...prev.cryptoDetails!,
-                          network: e.target.value,
-                        },
-                      }));
-                    }}
-                  />
-                </div>
-              )}
-
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsWithdrawDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={
-                    isWithdrawing ||
-                    !withdrawAmount ||
-                    (withdrawalMethod.type === "bank" &&
-                      (!withdrawalMethod.bankDetails?.name ||
-                        !withdrawalMethod.bankDetails?.accountNo)) ||
-                    (withdrawalMethod.type === "crypto" &&
-                      (!withdrawalMethod.cryptoDetails?.address ||
-                        !withdrawalMethod.cryptoDetails?.network))
-                  }
-                >
-                  {isWithdrawing && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
-                  Withdraw
-                </Button>
-              </DialogFooter>
-            </form>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Show blur overlay if conditions are not met */}
+      {(!paymentStatus?.hasPurchasedCourse ||
+        !paymentStatus?.isPaymentVerified) && (
+        <BlurOverlay
+          message={getMessage()}
+          actionLabel={
+            !paymentStatus?.hasPurchasedCourse
+              ? "Browse Plans"
+              : "Contact Support"
+          }
+          onAction={() =>
+            !paymentStatus?.hasPurchasedCourse
+              ? router.push("/plans")
+              : window.open("contact@cryptoedu.com")
+          }
+        />
+      )}
     </div>
   );
 }
