@@ -78,6 +78,7 @@ function LoginContent() {
   const handleGoogleLogin = async () => {
     try {
       toast({
+        title: "Google Error",
         description: "Google service is currently down.",
         variant: "default",
       });
