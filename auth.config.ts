@@ -4,7 +4,14 @@ import Credentials from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
 import { LoginSchema } from "./schemas/auth";
 import { authenticateUser } from "./lib/auth-utils";
-import { Role, User as PrismaUser, Profile, Prisma } from "@prisma/client";
+import {
+  Role,
+  User as PrismaUser,
+  Profile,
+  Prisma,
+  ReferralStats,
+  Wallet,
+} from "@prisma/client";
 import { generateReferralCode } from "./lib/utils";
 
 type UserProfile = {
@@ -26,6 +33,16 @@ type SessionUser = {
   occupation: string;
   referralCode: string;
   profile: UserProfile;
+  referralStats: {
+    totalReferrals: number;
+    activeReferrals: number;
+    earnings: number;
+  };
+  wallet: {
+    balance: number;
+    referralBonus: number;
+    stipendBonus: number;
+  };
 };
 
 type GoogleProfile = {
@@ -38,6 +55,8 @@ type GoogleProfile = {
 
 type DbUser = PrismaUser & {
   profile: Profile | null;
+  referralStats: ReferralStats | null;
+  wallet: Wallet | null;
 };
 
 declare module "next-auth" {
@@ -71,7 +90,7 @@ export const authConfig = {
           id: profile.sub,
           email: profile.email,
           name: profile.name,
-          profile: { create: { avatar: profile.picture } },
+          image: profile.picture,
           role: "USER" as Role,
           occupation: "Not specified",
         };
@@ -100,8 +119,10 @@ export const authConfig = {
         where: { id: token?.id },
         include: {
           profile: true,
+          referralStats: true,
+          wallet: true,
         },
-      })) as DbUser | null;
+      })) as (DbUser & { referralStats: any; wallet: any }) | null;
 
       if (!dbUser) {
         throw new Error("User not found");
@@ -128,6 +149,16 @@ export const authConfig = {
             ? JSON.parse(dbUser.profile.activities as string)
             : [],
         },
+        referralStats: dbUser.referralStats ?? {
+          totalReferrals: 0,
+          activeReferrals: 0,
+          earnings: 0,
+        },
+        wallet: dbUser.wallet ?? {
+          balance: 0,
+          referralBonus: 0,
+          stipendBonus: 0,
+        },
       };
 
       return {
@@ -141,12 +172,28 @@ export const authConfig = {
 
         const existingUser = (await prisma.user.findUnique({
           where: { email: oauthUser.email },
-          include: { profile: true },
+          include: {
+            profile: true,
+            referralStats: true,
+            wallet: true,
+          },
         })) as DbUser | null;
 
         if (!existingUser) {
           if (account?.provider === "google") {
-            const newReferralCode = generateReferralCode();
+            // Generate a unique referral code
+            let newReferralCode = generateReferralCode();
+            let existingUserWithCode = await prisma.user.findUnique({
+              where: { referralCode: newReferralCode },
+            });
+
+            // Keep generating until we find a unique code
+            while (existingUserWithCode) {
+              newReferralCode = generateReferralCode();
+              existingUserWithCode = await prisma.user.findUnique({
+                where: { referralCode: newReferralCode },
+              });
+            }
 
             await prisma.user.create({
               data: {
@@ -168,12 +215,63 @@ export const authConfig = {
                     earnings: 0,
                   },
                 },
+                wallet: {
+                  create: {
+                    balance: 0,
+                    referralBonus: 0,
+                    stipendBonus: 0,
+                  },
+                },
               },
             });
           } else {
             return false;
           }
         } else if (account?.provider === "google") {
+          // Generate referral code if it doesn't exist
+          if (!existingUser.referralCode) {
+            let newReferralCode = generateReferralCode();
+            let existingUserWithCode = await prisma.user.findUnique({
+              where: { referralCode: newReferralCode },
+            });
+
+            while (existingUserWithCode) {
+              newReferralCode = generateReferralCode();
+              existingUserWithCode = await prisma.user.findUnique({
+                where: { referralCode: newReferralCode },
+              });
+            }
+
+            await prisma.user.update({
+              where: { id: existingUser.id },
+              data: { referralCode: newReferralCode },
+            });
+          }
+
+          // Check and create referral stats if they don't exist
+          if (!existingUser.referralStats) {
+            await prisma.referralStats.create({
+              data: {
+                userId: existingUser.id,
+                totalReferrals: 0,
+                activeReferrals: 0,
+                earnings: 0,
+              },
+            });
+          }
+
+          // Check and create wallet if it doesn't exist
+          if (!existingUser.wallet) {
+            await prisma.wallet.create({
+              data: {
+                userId: existingUser.id,
+                balance: 0,
+                referralBonus: 0,
+                stipendBonus: 0,
+              },
+            });
+          }
+
           if (!existingUser.profile) {
             await prisma.profile.create({
               data: {
