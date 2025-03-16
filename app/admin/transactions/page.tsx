@@ -109,7 +109,7 @@ export default function TransactionsPage() {
   };
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <DollarSign className="h-8 w-8 text-primary" />

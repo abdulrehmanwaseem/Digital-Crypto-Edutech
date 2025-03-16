@@ -1,14 +1,8 @@
-"use client"
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import {
-  AlertCircle,
-  BookOpen,
-  DollarSign,
-  Users,
-  Users2
-} from "lucide-react"
-import { useEffect, useState } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertCircle, BookOpen, DollarSign, Users, Users2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import {
   CartesianGrid,
   Line,
@@ -16,59 +10,59 @@ import {
   ResponsiveContainer,
   Tooltip,
   XAxis,
-  YAxis
-} from "recharts"
-import { toast } from "sonner"
+  YAxis,
+} from "recharts";
+import { toast } from "sonner";
 
 interface DashboardData {
   stats: {
-    totalUsers: number
-    activeCourses: number
-    totalRevenue: number
-    totalReferrals: number
-  }
+    totalUsers: number;
+    activeCourses: number;
+    totalRevenue: number;
+    totalReferrals: number;
+  };
   chartData: {
-    name: string
-    users: number
-    revenue: number
-  }[]
+    name: string;
+    users: number;
+    revenue: number;
+  }[];
   recentActivity: {
-    newUsers: number
-    pendingPayments: number
-    completions: number
-  }
+    newUsers: number;
+    pendingPayments: number;
+    completions: number;
+  };
 }
 
 export default function AdminDashboard() {
-  const [loading, setLoading] = useState(true)
-  const [data, setData] = useState<DashboardData | null>(null)
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<DashboardData | null>(null);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const response = await fetch("/api/admin/dashboard")
+        const response = await fetch("/api/admin/dashboard");
         if (!response.ok) {
-          throw new Error("Failed to fetch dashboard data")
+          throw new Error("Failed to fetch dashboard data");
         }
-        const dashboardData = await response.json()
-        setData(dashboardData)
+        const dashboardData = await response.json();
+        setData(dashboardData);
       } catch (error) {
-        console.error("Dashboard Error:", error)
-        toast.error("Failed to load dashboard data")
+        console.error("Dashboard Error:", error);
+        toast.error("Failed to load dashboard data");
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchDashboardData()
-  }, [])
+    fetchDashboardData();
+  }, []);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
-    )
+    );
   }
 
   if (!data) {
@@ -76,24 +70,24 @@ export default function AdminDashboard() {
       <div className="text-center py-8">
         <p className="text-muted-foreground">Failed to load dashboard data</p>
       </div>
-    )
+    );
   }
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount)
-  }
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(amount);
+  };
 
   const formatNumber = (num: number) => {
-    return new Intl.NumberFormat('en-US').format(num)
-  }
+    return new Intl.NumberFormat("en-US").format(num);
+  };
 
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">Dashboard Overview</h1>
-      
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -101,20 +95,24 @@ export default function AdminDashboard() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatNumber(data.stats.totalUsers)}</div>
+            <div className="text-2xl font-bold">
+              {formatNumber(data.stats.totalUsers)}
+            </div>
             <p className="text-xs text-muted-foreground">
               {data.recentActivity.newUsers} new today
             </p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Revenue</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(data.stats.totalRevenue)}</div>
+            <div className="text-2xl font-bold">
+              {formatCurrency(data.stats.totalRevenue)}
+            </div>
             <p className="text-xs text-muted-foreground">
               {data.recentActivity.pendingPayments} pending payments
             </p>
@@ -123,7 +121,9 @@ export default function AdminDashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Active Courses</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Active Courses
+            </CardTitle>
             <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -134,12 +134,18 @@ export default function AdminDashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Referrals</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Referrals
+            </CardTitle>
             <Users2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatNumber(data.stats.totalReferrals)}</div>
-            <p className="text-xs text-muted-foreground">Successful referrals</p>
+            <div className="text-2xl font-bold">
+              {formatNumber(data.stats.totalReferrals)}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Successful referrals
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -174,7 +180,7 @@ export default function AdminDashboard() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
-                <Tooltip 
+                <Tooltip
                   formatter={(value) => formatCurrency(value as number)}
                 />
                 <Line
@@ -218,7 +224,8 @@ export default function AdminDashboard() {
             <div>
               <p className="font-medium">Course Completions</p>
               <p className="text-sm text-muted-foreground">
-                {data.recentActivity.completions} users completed their courses today
+                {data.recentActivity.completions} users completed their courses
+                today
               </p>
             </div>
             <span className="text-sm text-muted-foreground">Today</span>
@@ -226,5 +233,5 @@ export default function AdminDashboard() {
         </div>
       </Card>
     </div>
-  )
+  );
 }

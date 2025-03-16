@@ -214,13 +214,101 @@ export default function PaymentPage() {
                 isSelected={paymentMethod === "bank"}
               >
                 <div className="space-y-2">
-                  <p className="font-medium">Bank: Example Bank</p>
-                  <p>Account Number: 1234567890</p>
-                  <p>Account Name: Crypto LMS</p>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Please transfer the exact amount and use your email as
-                    reference
-                  </p>
+                  <div className="flex justify-between items-center">
+                    <p className="font-medium">Account Name:</p>
+                    <div className="flex items-center gap-2">
+                      <p>FIROJ MONDAL</p>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          navigator.clipboard.writeText("FIROJ MONDAL");
+                          toast({
+                            title: "Copied!",
+                            description: "Account name copied to clipboard",
+                          });
+                        }}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <p className="font-medium">Bank Name:</p>
+                    <div className="flex items-center gap-2">
+                      <p>PUNJAB NATIONAL BANK</p>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          navigator.clipboard.writeText("PUNJAB NATIONAL BANK");
+                          toast({
+                            title: "Copied!",
+                            description: "Bank name copied to clipboard",
+                          });
+                        }}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <p className="font-medium">Account Number:</p>
+                    <div className="flex items-center gap-2">
+                      <code className="bg-muted p-1 rounded">033001020395</code>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          navigator.clipboard.writeText("033001020395");
+                          toast({
+                            title: "Copied!",
+                            description: "Account number copied to clipboard",
+                          });
+                        }}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <p className="font-medium">IFSC Code:</p>
+                    <div className="flex items-center gap-2">
+                      <code className="bg-muted p-1 rounded">PUNB0033020</code>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          navigator.clipboard.writeText("PUNB0033020");
+                          toast({
+                            title: "Copied!",
+                            description: "IFSC code copied to clipboard",
+                          });
+                        }}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <p className="font-medium">Phone/Google Pay:</p>
+                    <div className="flex items-center gap-2">
+                      <code className="bg-muted p-1 rounded">8972319894</code>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          navigator.clipboard.writeText("8972319894");
+                          toast({
+                            title: "Copied!",
+                            description: "Phone number copied to clipboard",
+                          });
+                        }}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </PaymentMethodCard>
 
@@ -229,29 +317,56 @@ export default function PaymentPage() {
                 method="crypto"
                 isSelected={paymentMethod === "crypto"}
               >
-                <div className="space-y-2">
-                  <p className="font-medium">USDT (TRC20)</p>
-                  <div className="flex items-center gap-2">
-                    <code className="flex-1 bg-muted p-2 rounded text-sm">
-                      TRC20WalletAddressHere
-                    </code>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => {
-                        navigator.clipboard.writeText("TRC20WalletAddressHere");
-                        toast({
-                          title: "Copied!",
-                          description: "Wallet address copied to clipboard",
-                        });
-                      }}
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
+                <div className="space-y-4">
+                  <div>
+                    <p className="font-medium mb-2">TRON (TRC20)</p>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 bg-muted p-2 rounded text-sm break-all">
+                        TTHPFAjnpPHZKujeAymbRkeBFPq1GB4SDU
+                      </code>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          navigator.clipboard.writeText(
+                            "TTHPFAjnpPHZKujeAymbRkeBFPq1GB4SDU"
+                          );
+                          toast({
+                            title: "Copied!",
+                            description:
+                              "TRX wallet address copied to clipboard",
+                          });
+                        }}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Send exactly ${planDetails.price} USDT to this address
-                  </p>
+
+                  <div>
+                    <p className="font-medium mb-2">BNB Smart Chain (BEP20)</p>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 bg-muted p-2 rounded text-sm break-all">
+                        0x1d2E14A94ac59749D3A6AF5465125ab168A3612a
+                      </code>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          navigator.clipboard.writeText(
+                            "0x1d2E14A94ac59749D3A6AF5465125ab168A3612a"
+                          );
+                          toast({
+                            title: "Copied!",
+                            description:
+                              "BNB wallet address copied to clipboard",
+                          });
+                        }}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </PaymentMethodCard>
             </div>

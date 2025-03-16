@@ -15,6 +15,7 @@ const courses = [
       "Complete crypto feature access",
       "24/7 Customer Support",
       "Crypto Signal Access",
+      "Technical Analysis Resources",
     ],
     stipend: null, // no stipend
     referralBonus: {
@@ -43,6 +44,8 @@ const courses = [
       "Complete crypto feature access",
       "24/7 Customer Support",
       "Crypto Signal Access",
+      "Technical Analysis Resources",
+      "Fundamental Analysis Training",
     ],
     stipend: null,
     referralBonus: {
@@ -71,6 +74,10 @@ const courses = [
       "Complete crypto feature access",
       "24/7 Customer Support",
       "Crypto Signal Access",
+      "Technical Analysis Resources",
+      "Fundamental Analysis Training",
+      "Priority Support",
+      "Advanced Market Analysis",
     ],
     stipend: { amount: 6, months: 3 },
     referralBonus: {
@@ -105,6 +112,12 @@ const courses = [
       "Complete crypto feature access",
       "24/7 Customer Support",
       "Crypto Signal Access",
+      "Technical Analysis Resources",
+      "Fundamental Analysis Training",
+      "Priority Support",
+      "Advanced Market Analysis",
+      "One-on-One Mentoring",
+      "Custom Trading Strategies",
     ],
     stipend: { amount: 12, months: 5 },
     referralBonus: {
@@ -130,11 +143,24 @@ const courses = [
 ];
 
 async function main() {
-  console.log("Seeding courses...");
+  console.log("Updating courses...");
 
   for (const course of courses) {
-    await prisma.course.create({
-      data: {
+    await prisma.course.upsert({
+      where: {
+        id: course.id,
+      },
+      update: {
+        title: course.title,
+        description: course.description,
+        imageUrl: course.imageUrl,
+        price: course.price,
+        duration: course.duration,
+        features: course.features,
+        stipend: course.stipend ?? undefined,
+        referralBonus: course.referralBonus,
+      },
+      create: {
         id: course.id,
         title: course.title,
         description: course.description,
@@ -142,20 +168,19 @@ async function main() {
         price: course.price,
         duration: course.duration,
         features: course.features,
-        // Use nullish coalescing to replace null with undefined for JSON fields
         stipend: course.stipend ?? undefined,
         referralBonus: course.referralBonus,
       },
     });
-    console.log(`Seeded course: ${course.title}`);
+    console.log(`Updated/Created course: ${course.title}`);
   }
 
-  console.log("Seeding complete.");
+  console.log("Update complete.");
 }
 
 main()
   .catch((error) => {
-    console.error("Error seeding courses:", error);
+    console.log("Error updating courses:", error);
     process.exit(1);
   })
   .finally(async () => {

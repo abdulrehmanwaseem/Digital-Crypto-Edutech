@@ -1,12 +1,12 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import Image from "next/image"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Check } from "lucide-react"
+import { useEffect, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Check } from "lucide-react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -17,33 +17,37 @@ import {
   ArrowRight,
   CheckCircle2,
   TrendingUp,
-  Shield
-} from "lucide-react"
-import { cn } from "@/lib/utils"
-import { Crown, Star } from "lucide-react"
+  Shield,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Crown, Star } from "lucide-react";
 
 const slides = [
   {
     image: "/images/image1.jpg",
     title: "Master Crypto Trading",
-    description: "Learn from industry experts and start your journey in cryptocurrency trading",
+    description:
+      "Learn from industry experts and start your journey in cryptocurrency trading",
   },
   {
     image: "/images/image2.jpg",
     title: "Earn While You Learn",
-    description: "Get stipends and rewards as you progress through our comprehensive courses",
+    description:
+      "Get stipends and rewards as you progress through our comprehensive courses",
   },
   {
     image: "/images/image3.jpg",
     title: "Join Our Community",
-    description: "Connect with fellow traders and build your network in the crypto space",
+    description:
+      "Connect with fellow traders and build your network in the crypto space",
   },
   {
     image: "/images/image4.jpg",
     title: "Advanced Trading Tools",
-    description: "Access professional trading tools and real-time market analysis",
+    description:
+      "Access professional trading tools and real-time market analysis",
   },
-]
+];
 
 const features = [
   {
@@ -54,7 +58,8 @@ const features = [
   {
     icon: Wallet2,
     title: "Earn Stipends",
-    description: "Receive rewards as you progress through your learning journey",
+    description:
+      "Receive rewards as you progress through your learning journey",
   },
   {
     icon: Users2,
@@ -66,14 +71,14 @@ const features = [
     title: "Certification",
     description: "Earn recognized certificates upon course completion",
   },
-]
+];
 
 const stats = [
   { value: "20K+", label: "Active Students" },
   { value: "95%", label: "Success Rate" },
   { value: "50+", label: "Expert Instructors" },
   { value: "24/7", label: "Support Available" },
-]
+];
 
 const plans = [
   {
@@ -86,8 +91,8 @@ const plans = [
       "Complete crypto feature access",
       "24/7 Customer Support",
       "Crypto Signal Access",
-      "Technical Analysis Resources"
-    ]
+      "Technical Analysis Resources",
+    ],
   },
   {
     name: "Standard",
@@ -100,8 +105,8 @@ const plans = [
       "24/7 Customer Support",
       "Crypto Signal Access",
       "Technical Analysis Resources",
-      "Fundamental Analysis Training"
-    ]
+      "Fundamental Analysis Training",
+    ],
   },
   {
     name: "Premium",
@@ -109,7 +114,7 @@ const plans = [
     duration: "4 months",
     stipend: {
       amount: 6,
-      months: 3
+      months: 3,
     },
     features: [
       "Basic to advance curriculum coverage",
@@ -119,8 +124,8 @@ const plans = [
       "Technical Analysis Resources",
       "Fundamental Analysis Training",
       "Priority Support",
-      "Advanced Market Analysis"
-    ]
+      "Advanced Market Analysis",
+    ],
   },
   {
     name: "Professional",
@@ -128,7 +133,7 @@ const plans = [
     duration: "6 months",
     stipend: {
       amount: 12,
-      months: 5
+      months: 5,
     },
     features: [
       "Basic to advance curriculum coverage",
@@ -140,57 +145,57 @@ const plans = [
       "Priority Support",
       "Advanced Market Analysis",
       "One-on-One Mentoring",
-      "Custom Trading Strategies"
-    ]
-  }
-]
+      "Custom Trading Strategies",
+    ],
+  },
+];
 
 export default function Home() {
-  const [currentSlide, setCurrentSlide] = useState(0)
-  const [isLoading, setIsLoading] = useState(true)
-  const [touchStart, setTouchStart] = useState(0)
-  const [touchEnd, setTouchEnd] = useState(0)
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length)
-    }, 5000)
-    return () => clearInterval(timer)
-  }, [])
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStart(e.targetTouches[0].clientX)
-  }
+    setTouchStart(e.targetTouches[0].clientX);
+  };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX)
-  }
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
 
   const handleTouchEnd = () => {
     if (touchStart - touchEnd > 75) {
       // Swipe left
-      setCurrentSlide((prev) => (prev + 1) % slides.length)
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
     }
 
     if (touchStart - touchEnd < -75) {
       // Swipe right
-      setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length)
+      setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
     }
-  }
+  };
 
   const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % slides.length)
-  }
+    setCurrentSlide((prev) => (prev + 1) % slides.length);
+  };
 
   const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length)
-  }
+    setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
+  };
 
   return (
     <div className="flex min-h-screen flex-col">
       <main className="flex-1">
         {/* Hero Section */}
-        <div 
+        <div
           className="relative h-[600px] overflow-hidden"
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
@@ -203,8 +208,8 @@ export default function Home() {
                 key={index}
                 className={cn(
                   "absolute inset-0 transition-all duration-700",
-                  currentSlide === index 
-                    ? "opacity-100 translate-x-0" 
+                  currentSlide === index
+                    ? "opacity-100 translate-x-0"
                     : currentSlide < index
                     ? "opacity-0 translate-x-full"
                     : "opacity-0 -translate-x-full"
@@ -222,42 +227,46 @@ export default function Home() {
                   priority={index === 0}
                   onLoad={() => setIsLoading(false)}
                   onError={() => setIsLoading(false)}
-
                 />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="container px-4 text-center text-white">
-                    <h1 
+                    <h1
                       className={cn(
                         "mb-6 text-4xl font-bold transition-all duration-700 sm:text-5xl md:text-6xl",
-                        currentSlide === index 
-                          ? "translate-y-0 opacity-100" 
+                        currentSlide === index
+                          ? "translate-y-0 opacity-100"
                           : "translate-y-4 opacity-0"
                       )}
                     >
                       {slide.title}
                     </h1>
-                    <p 
+                    <p
                       className={cn(
                         "mx-auto mb-8 max-w-2xl text-lg text-gray-200 transition-all delay-100 duration-700 sm:text-xl",
-                        currentSlide === index 
-                          ? "translate-y-0 opacity-100" 
+                        currentSlide === index
+                          ? "translate-y-0 opacity-100"
                           : "translate-y-4 opacity-0"
                       )}
                     >
                       {slide.description}
                     </p>
-                    <div 
+                    <div
                       className={cn(
                         "flex justify-center gap-4 transition-all delay-200 duration-700",
-                        currentSlide === index 
-                          ? "translate-y-0 opacity-100" 
+                        currentSlide === index
+                          ? "translate-y-0 opacity-100"
                           : "translate-y-4 opacity-0"
                       )}
                     >
                       <Button size="lg" className="min-w-[150px]" asChild>
                         <Link href="/plans">Get Started</Link>
                       </Button>
-                      <Button size="lg" variant="outline" className="min-w-[150px]" asChild>
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        className="min-w-[150px]"
+                        asChild
+                      >
                         <Link href="/about">Learn More</Link>
                       </Button>
                     </div>
@@ -311,12 +320,11 @@ export default function Home() {
           <div className="container">
             <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
               {stats.map((stat, index) => (
-                <div 
-                  key={index}
-                  className="text-center"
-                >
+                <div key={index} className="text-center">
                   <p className="mb-2 text-4xl font-bold">{stat.value}</p>
-                  <p className="text-lg text-primary-foreground/80">{stat.label}</p>
+                  <p className="text-lg text-primary-foreground/80">
+                    {stat.label}
+                  </p>
                 </div>
               ))}
             </div>
@@ -328,20 +336,23 @@ export default function Home() {
           <div className="mb-16 text-center">
             <h2 className="mb-4 text-4xl font-bold">Why Choose CryptoEdu?</h2>
             <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-              Join thousands of successful traders who started their journey with our comprehensive platform
+              Join thousands of successful traders who started their journey
+              with our comprehensive platform
             </p>
           </div>
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {features.map((feature, index) => (
-              <Card 
-                key={index} 
+              <Card
+                key={index}
                 className="group hover-card overflow-hidden border-2 p-6"
               >
                 <div className="flex flex-col items-center text-center">
                   <div className="mb-4 rounded-2xl bg-primary/10 p-3 text-primary transition-colors group-hover:bg-primary group-hover:text-white">
                     <feature.icon className="h-8 w-8" />
                   </div>
-                  <h3 className="mb-2 text-xl font-semibold">{feature.title}</h3>
+                  <h3 className="mb-2 text-xl font-semibold">
+                    {feature.title}
+                  </h3>
                   <p className="text-muted-foreground">{feature.description}</p>
                 </div>
               </Card>
@@ -355,7 +366,8 @@ export default function Home() {
             <div className="mb-16 text-center">
               <h2 className="mb-4 text-4xl font-bold">Your Path to Success</h2>
               <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-                We provide everything you need to become a successful crypto trader
+                We provide everything you need to become a successful crypto
+                trader
               </p>
             </div>
             <div className="grid gap-8 md:grid-cols-2">
@@ -363,27 +375,36 @@ export default function Home() {
                 <div className="flex items-start gap-4">
                   <CheckCircle2 className="mt-1 h-6 w-6 text-primary" />
                   <div>
-                    <h3 className="mb-2 text-xl font-semibold">Structured Learning Path</h3>
+                    <h3 className="mb-2 text-xl font-semibold">
+                      Structured Learning Path
+                    </h3>
                     <p className="text-muted-foreground">
-                      Follow our carefully designed curriculum that takes you from basics to advanced trading
+                      Follow our carefully designed curriculum that takes you
+                      from basics to advanced trading
                     </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
                   <TrendingUp className="mt-1 h-6 w-6 text-primary" />
                   <div>
-                    <h3 className="mb-2 text-xl font-semibold">Real Market Experience</h3>
+                    <h3 className="mb-2 text-xl font-semibold">
+                      Real Market Experience
+                    </h3>
                     <p className="text-muted-foreground">
-                      Practice with real market data and simulated trading environments
+                      Practice with real market data and simulated trading
+                      environments
                     </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
                   <Shield className="mt-1 h-6 w-6 text-primary" />
                   <div>
-                    <h3 className="mb-2 text-xl font-semibold">Risk Management</h3>
+                    <h3 className="mb-2 text-xl font-semibold">
+                      Risk Management
+                    </h3>
                     <p className="text-muted-foreground">
-                      Learn essential risk management strategies to protect your investments
+                      Learn essential risk management strategies to protect your
+                      investments
                     </p>
                   </div>
                 </div>
@@ -404,18 +425,24 @@ export default function Home() {
         <section className="py-16 bg-muted/50">
           <div className="container px-4">
             <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold mb-4">Choose Your Learning Path</h2>
+              <h2 className="text-3xl font-bold mb-4">
+                Choose Your Learning Path
+              </h2>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Select a plan that best suits your learning goals. Each plan includes comprehensive curriculum and dedicated support.
+                Select a plan that best suits your learning goals. Each plan
+                includes comprehensive curriculum and dedicated support.
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {plans.map((plan, index) => (
-                <Card key={index} className={cn(
-                  "relative overflow-hidden transition-all duration-300 hover:shadow-lg flex flex-col h-full",
-                  plan.name === "Premium" && "border-primary"
-                )}>
+                <Card
+                  key={index}
+                  className={cn(
+                    "relative overflow-hidden transition-all duration-300 hover:shadow-lg flex flex-col h-full",
+                    plan.name === "Premium" && "border-primary"
+                  )}
+                >
                   {plan.name === "Premium" && (
                     <div className="absolute top-4 right-4">
                       <Crown className="h-6 w-6 text-primary" />
@@ -425,7 +452,9 @@ export default function Home() {
                     <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
                     <div className="flex items-baseline gap-1 mb-6">
                       <span className="text-3xl font-bold">${plan.price}</span>
-                      <span className="text-muted-foreground">/{plan.duration}</span>
+                      <span className="text-muted-foreground">
+                        /{plan.duration}
+                      </span>
                     </div>
                     <ul className="space-y-3 mb-6">
                       {plan.features.map((feature, i) => (
@@ -437,17 +466,30 @@ export default function Home() {
                       {plan.stipend && (
                         <li className="flex items-center gap-2 font-medium text-primary">
                           <Star className="h-5 w-5 flex-shrink-0" />
-                          <span>${plan.stipend.amount} monthly stipend for {plan.stipend.months} months</span>
+                          <span>
+                            ${plan.stipend.amount} monthly stipend for{" "}
+                            {plan.stipend.months} months
+                          </span>
                         </li>
                       )}
                     </ul>
                   </div>
                   <div className="p-6 pt-0 mt-auto border-t">
                     <div className="space-y-3">
-                      <Button className="w-full" variant={plan.name === "Premium" ? "default" : "outline"} asChild>
+                      <Button
+                        className="w-full"
+                        variant={
+                          plan.name === "Premium" ? "default" : "outline"
+                        }
+                        asChild
+                      >
                         <Link href="/plans">Choose {plan.name}</Link>
                       </Button>
-                      <Button variant="link" className="w-full text-sm text-muted-foreground hover:text-primary" asChild>
+                      <Button
+                        variant="link"
+                        className="w-full text-sm text-muted-foreground hover:text-primary"
+                        asChild
+                      >
                         <Link href="/plans">View detailed features</Link>
                       </Button>
                     </div>
@@ -461,8 +503,12 @@ export default function Home() {
                 All plans include access to our community and learning resources
               </p>
               <Button variant="link" asChild>
-                <Link href="/plans" className="text-primary font-medium hover:underline">
-                  View detailed plan comparison <ArrowRight className="h-4 w-4 ml-1" />
+                <Link
+                  href="/plans"
+                  className="text-primary font-medium hover:underline"
+                >
+                  View detailed plan comparison{" "}
+                  <ArrowRight className="h-4 w-4 ml-1" />
                 </Link>
               </Button>
             </div>
@@ -478,18 +524,15 @@ export default function Home() {
                 Ready to Start Your Crypto Journey?
               </h2>
               <p className="mb-8 text-lg text-muted-foreground">
-                Join thousands of successful traders who started with CryptoEdu. 
-                Get access to expert-led courses, community support, and earn while you learn.
+                Join thousands of successful traders who started with CryptoEdu.
+                Get access to expert-led courses, community support, and earn
+                while you learn.
               </p>
               <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-                <Button 
-                  size="lg" 
-                  className="min-w-[200px] text-lg"
-                  asChild
-                >
+                <Button size="lg" className="min-w-[200px] text-lg" asChild>
                   <Link href="/register">Start Learning</Link>
                 </Button>
-                <Button 
+                <Button
                   size="lg"
                   variant="outline"
                   className="min-w-[200px] text-lg"
@@ -503,5 +546,5 @@ export default function Home() {
         </section>
       </main>
     </div>
-  )
+  );
 }

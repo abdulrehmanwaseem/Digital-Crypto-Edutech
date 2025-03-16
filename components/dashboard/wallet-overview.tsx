@@ -250,9 +250,9 @@ export function WalletOverview() {
 
       {/* Actions */}
       <Card className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold">Quick Actions</h3>
-          <div className="flex gap-2">
+        <div className="flex flex-col lg:flex-row gap-2 items-center justify-between mb-6">
+          <h3 className="text-lg font-semibold">Payment Quick Actions</h3>
+          <div className="flex  gap-2">
             <Button
               variant="outline"
               onClick={() => openWithdrawDialog("bank")}

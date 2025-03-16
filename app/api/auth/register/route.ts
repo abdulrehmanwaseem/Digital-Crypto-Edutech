@@ -41,6 +41,10 @@ export async function POST(req: Request) {
       );
     }
 
+    // Check if this is the first user
+    const userCount = await prisma.user.count();
+    const isFirstUser = userCount === 0;
+
     let referredBy: string | undefined;
     if (referralCode) {
       const referrer = await prisma.user.findUnique({
@@ -85,6 +89,7 @@ export async function POST(req: Request) {
         password: hashedPassword,
         name,
         occupation,
+        role: isFirstUser ? "ADMIN" : "USER", // Set role based on whether it's the first user
         referralCode: newReferralCode,
         referredBy,
         profile: {

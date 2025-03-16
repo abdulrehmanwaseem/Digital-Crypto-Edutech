@@ -122,7 +122,7 @@ export default function UsersPage() {
   };
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 p-0">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Users className="h-8 w-8 text-primary" />
