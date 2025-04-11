@@ -11,8 +11,6 @@ const defaultProfile = {
   twitter: "",
   telegram: "",
   website: "",
-  achievements: JSON.stringify([]),
-  activities: JSON.stringify([]),
 };
 
 export async function POST(req: Request) {
@@ -27,8 +25,16 @@ export async function POST(req: Request) {
       );
     }
 
-    const { email, password, name, occupation, referralCode } =
-      validatedFields.data;
+    const {
+      email,
+      password,
+      name,
+      occupation,
+      referralCode,
+      incomeRange,
+      occupationType,
+      phone,
+    } = validatedFields.data;
 
     const existingUser = await prisma.user.findUnique({
       where: { email },
@@ -51,8 +57,6 @@ export async function POST(req: Request) {
         where: { referralCode },
         select: {
           id: true,
-          referralStats: true,
-          wallet: true,
         },
       });
 
@@ -63,21 +67,6 @@ export async function POST(req: Request) {
         );
       }
       referredBy = referrer.id;
-
-      // Update referrer's stats
-      await prisma.referralStats.upsert({
-        where: { userId: referrer.id },
-        create: {
-          userId: referrer.id,
-          totalReferrals: 1,
-          activeReferrals: 1,
-          earnings: 0,
-        },
-        update: {
-          totalReferrals: { increment: 1 },
-          activeReferrals: { increment: 1 },
-        },
-      });
     }
 
     const hashedPassword = await hash(password, 10);
@@ -86,9 +75,12 @@ export async function POST(req: Request) {
     const user = await prisma.user.create({
       data: {
         email,
-        password: hashedPassword,
+        hashedPassword,
         name,
         occupation,
+        incomeRange,
+        occupationType,
+        phone,
         role: isFirstUser ? "ADMIN" : "USER", // Set role based on whether it's the first user
         referralCode: newReferralCode,
         referredBy,
@@ -97,23 +89,9 @@ export async function POST(req: Request) {
             ...defaultProfile,
           },
         },
-        referralStats: {
-          create: {
-            totalReferrals: 0,
-            activeReferrals: 0,
-            earnings: 0,
-          },
-        },
-        wallet: {
-          create: {
-            balance: 0,
-            referralBonus: 0,
-          },
-        },
       },
       include: {
         profile: true,
-        wallet: true,
       },
     });
 
@@ -128,12 +106,6 @@ export async function POST(req: Request) {
           referralCode: user.referralCode,
           profile: {
             ...user.profile,
-            achievements: user.profile?.achievements
-              ? JSON.parse(user.profile.achievements as string)
-              : [],
-            activities: user.profile?.activities
-              ? JSON.parse(user.profile.activities as string)
-              : [],
           },
         },
       },

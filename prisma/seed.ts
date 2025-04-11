@@ -4,27 +4,26 @@ const prisma = new PrismaClient();
 
 const courses = [
   {
-    id: "basic-1", // using courseId as the primary key
+    id: "basic-1",
     title: "Basic",
     description: "Basic course description",
-    imageUrl: "https://example.com/basic.jpg", // replace with an actual URL if needed
+    imageUrl: "https://example.com/basic.jpg",
     price: 30,
     duration: "1 month",
     features: [
       "Basic to advance curriculum coverage",
       "Complete crypto feature access",
       "24/7 Customer Support",
-      "Crypto Signal Access",
       "Technical Analysis Resources",
     ],
-    stipend: null, // no stipend
+    stipend: null,
     referralBonus: {
-      amount: 5,
-      type: "fixed",
+      amount: 10, // 10% for $30 course
+      type: "percentage",
       tiers: [
-        { threshold: 3, bonus: 7 },
-        { threshold: 5, bonus: 10 },
-        { threshold: 10, bonus: 15 },
+        { threshold: 3, bonus: 12 },
+        { threshold: 5, bonus: 15 },
+        { threshold: 10, bonus: 20 },
       ],
       milestoneRewards: [
         { referrals: 5, reward: { type: "bonus", value: 25 } },
@@ -43,13 +42,12 @@ const courses = [
       "Basic to advance curriculum coverage",
       "Complete crypto feature access",
       "24/7 Customer Support",
-      "Crypto Signal Access",
       "Technical Analysis Resources",
       "Fundamental Analysis Training",
     ],
     stipend: null,
     referralBonus: {
-      amount: 10,
+      amount: 10, // 10% for $50 course
       type: "percentage",
       tiers: [
         { threshold: 3, bonus: 12 },
@@ -73,7 +71,6 @@ const courses = [
       "Basic to advance curriculum coverage",
       "Complete crypto feature access",
       "24/7 Customer Support",
-      "Crypto Signal Access",
       "Technical Analysis Resources",
       "Fundamental Analysis Training",
       "Priority Support",
@@ -81,7 +78,7 @@ const courses = [
     ],
     stipend: { amount: 6, months: 3 },
     referralBonus: {
-      amount: 15,
+      amount: 15, // 15% for $100 course
       type: "percentage",
       tiers: [
         { threshold: 3, bonus: 18 },
@@ -111,7 +108,6 @@ const courses = [
       "Basic to advance curriculum coverage",
       "Complete crypto feature access",
       "24/7 Customer Support",
-      "Crypto Signal Access",
       "Technical Analysis Resources",
       "Fundamental Analysis Training",
       "Priority Support",
@@ -121,7 +117,7 @@ const courses = [
     ],
     stipend: { amount: 12, months: 5 },
     referralBonus: {
-      amount: 20,
+      amount: 15, // 15% for $200 course
       type: "percentage",
       tiers: [
         { threshold: 3, bonus: 25 },

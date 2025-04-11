@@ -7,31 +7,9 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  name          String
-  password      String?
-  role          Role      @default(USER)
-  occupation    String    @default("Not specified")
-  emailVerified DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  referralCode  String?   @unique
-  referredBy    String?
-
-  wallet         Wallet?
-  accounts      Account[]
-  sessions      Session[]
-  enrollments   Enrollment[]
-  profile       Profile?
-  referralStats ReferralStats?
-  referral      Referral?
-  payments      Payment[]
-  withdrawals    Withdrawal[]
-
-  @@index([email])
-  @@index([referralCode])
+enum Role {
+  USER
+  ADMIN
 }
 
 model Account {
@@ -51,7 +29,6 @@ model Account {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
-  @@index([userId])
 }
 
 model Session {
@@ -60,168 +37,70 @@ model Session {
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
 }
 
-model Wallet {
-  id            String      @id @default(cuid())
-  userId        String      @unique
-  balance       Float       @default(0)
-  referralBonus Float       @default(0)
-  stipendBonus  Float       @default(0)
-  user          User        @relation(fields: [userId], references: [id])
-  transactions  WalletTransaction[]
-  withdrawals   Withdrawal[]
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-}
-
-model WalletTransaction {
-  id            String    @id @default(cuid())
-  walletId      String
-  amount        Float
-  type          TransactionType
-  status        TransactionStatus @default(PENDING)
-  description   String?
-  wallet        Wallet    @relation(fields: [walletId], references: [id])
-  createdAt     DateTime  @default(now())
-}
-
-model Withdrawal {
-  id            String    @id @default(cuid())
-  userId        String
-  walletId      String
-  amount        Float
-  status        WithdrawalStatus @default(PENDING)
-  paymentMethod String
-  accountDetails Json
-  notes         String?
-  processedAt   DateTime?
-  user          User      @relation(fields: [userId], references: [id])
-  wallet        Wallet    @relation(fields: [walletId], references: [id])
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-}
-
-enum TransactionType {
-  REFERRAL_BONUS
-  STIPEND
-  WITHDRAWAL
-}
-
-enum TransactionStatus {
-  PENDING
-  COMPLETED
-  FAILED
-}
-
-enum WithdrawalStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  COMPLETED
+model User {
+  id               String    @id @default(cuid())
+  name             String?
+  email            String?   @unique
+  emailVerified    DateTime?
+  image            String?
+  hashedPassword   String?
+  role             Role      @default(USER)
+  occupation       String?
+  incomeRange      String?
+  occupationType   String?
+  phone            String?
+  withdrawalAddress String?
+  referralCode     String?   @unique
+  referredBy       String?
+  referralCount    Int       @default(0)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  accounts         Account[]
+  sessions         Session[]
+  profile          Profile?
+  courses          Course[]
+  payments         Payment[]
 }
 
 model Profile {
-  id           String   @id @default(cuid())
-  userId       String   @unique
-  bio          String?  @default("Not specified")
-  location     String?  @default("Not specified")
-  avatar       String?  @default("")
-  twitter      String?  @default("")
-  telegram     String?  @default("")
-  website      String?  @default("")
-  achievements Json?    @default("[]")
-  activities   Json?    @default("[]")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  bio        String?  @db.Text
+  location   String?
+  avatar     String?
+  twitter    String?
+  telegram   String?
+  website    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Course {
-  id             String   @id @default(cuid())
-  title          String
-  description    String
-  imageUrl       String
-  price          Float
-  duration       String
-  features       String[]
-  stipend        Json?
-  referralBonus  Json
-  published      Boolean  @default(false)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  enrollments    Enrollment[]
-  payments       Payment[]
-
-  @@index([title])
-}
-
-model Enrollment {
-  id        String   @id @default(cuid())
-  userId    String
-  courseId  String
-  status    EnrollmentStatus @default(PENDING)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, courseId])
-  @@index([userId])
-  @@index([courseId])
-  @@index([status])
-}
-
-enum PaymentStatus {
-  PENDING
-  VERIFIED
-  REJECTED
-  REFUNDED
+  id          String   @id @default(cuid())
+  title       String
+  description String   @db.Text
+  price       Float
+  features    String[] @default([])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  users       User[]
+  payments    Payment[]
 }
 
 model Payment {
-  id              String        @id @default(cuid())
-  userId          String
-  courseId        String
-  amount          Float
-  currency        String        @default("USD")
-  status          PaymentStatus @default(PENDING)
-  proofImageUrl   String?
-  transactionId   String?      @unique
-  referralCode   String?  @unique @map("referralCode") // Check this line 👀
-  processingError String?
-  processedAt     DateTime?
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-
-  user     User      @relation(fields: [userId], references: [id])
-  course   Course    @relation(fields: [courseId], references: [id])
-  referral Referral? @relation(fields: [referralCode], references: [code]) // Foreign key reference 👀
-
-  @@index([userId])
-  @@index([courseId])
-  @@index([status])
-}
-
-model Referral {
-  code            String    @id
-  userId          String    @unique
-  totalReferrals  Int       @default(0)
-  activeReferrals Int       @default(0)
-  earnings        Float     @default(0)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  
-  user     User      @relation(fields: [userId], references: [id])
-  payments Payment[]
-
-  @@index([userId])
+  id        String   @id @default(cuid())
+  amount    Float
+  status    String
+  courseId  String
+  userId    String
+  proofUrl  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model SiteSettings {
@@ -232,29 +111,4 @@ model SiteSettings {
   contactEmail    String    @default("contact@cryptoedu.com")
   maintenanceMode Boolean   @default(false)
   updatedAt       DateTime  @updatedAt
-}
-
-model ReferralStats {
-  id             String   @id @default(cuid())
-  userId         String   @unique
-  totalReferrals Int      @default(0)
-  activeReferrals Int     @default(0)
-  earnings       Float    @default(0)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([earnings])
-}
-
-enum Role {
-  USER
-  ADMIN
-}
-enum EnrollmentStatus {
-  PENDING
-  ACTIVE
-  COMPLETED
-  CANCELLED
 }

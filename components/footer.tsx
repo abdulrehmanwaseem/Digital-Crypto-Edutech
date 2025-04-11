@@ -1,8 +1,22 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Github, Twitter, Linkedin, Mail, Phone } from "lucide-react";
+import {
+  Github,
+  Twitter,
+  Linkedin,
+  Mail,
+  Phone,
+  MessageSquare,
+  MessageCircle,
+} from "lucide-react";
 
-export function Footer({ siteSettings }) {
+interface SiteSettings {
+  siteName?: string;
+  description?: string;
+  contactEmail?: string;
+}
+
+export function Footer({ siteSettings }: { siteSettings: SiteSettings }) {
   return (
     <footer className="border-t bg-background">
       <div className="container px-4 py-12">
@@ -22,35 +36,28 @@ export function Footer({ siteSettings }) {
             </Link>
             <p className="text-sm text-muted-foreground">
               {siteSettings?.description ||
-                "Your trusted platform for cryptocurrency education and trading mastery."}
+                "Your trusted platform for cryptocurrency education."}
             </p>
             <div className="flex space-x-4">
               <Link
-                href="https://github.com"
+                href="https://wa.me/YOUR_WHATSAPP_NUMBER"
                 target="_blank"
                 rel="noreferrer"
                 className="text-muted-foreground hover:text-foreground transition-colors"
+                title="WhatsApp"
               >
-                <Github className="h-5 w-5" />
-                <span className="sr-only">GitHub</span>
+                <MessageCircle className="h-5 w-5" />
+                <span className="sr-only">WhatsApp</span>
               </Link>
               <Link
-                href="https://twitter.com"
+                href="https://t.me/YOUR_TELEGRAM_CHANNEL"
                 target="_blank"
                 rel="noreferrer"
                 className="text-muted-foreground hover:text-foreground transition-colors"
+                title="Telegram"
               >
-                <Twitter className="h-5 w-5" />
-                <span className="sr-only">Twitter</span>
-              </Link>
-              <Link
-                href="https://linkedin.com"
-                target="_blank"
-                rel="noreferrer"
-                className="text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <Linkedin className="h-5 w-5" />
-                <span className="sr-only">LinkedIn</span>
+                <MessageSquare className="h-5 w-5" />
+                <span className="sr-only">Telegram</span>
               </Link>
             </div>
           </div>
@@ -85,49 +92,10 @@ export function Footer({ siteSettings }) {
               </li>
               <li>
                 <Link
-                  href="/resources"
+                  href="/feedback"
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  Resources
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Learn */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Learn</h3>
-            <ul className="space-y-2">
-              <li>
-                <Link
-                  href="/blog"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Blog
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/tutorials"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Tutorials
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/faq"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  FAQ
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/glossary"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Crypto Glossary
+                  Feedback
                 </Link>
               </li>
             </ul>
@@ -188,6 +156,46 @@ export function Footer({ siteSettings }) {
               </li>
             </ul>
           </div>
+
+          {/* Admin Panel */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Admin Panel</h3>
+            <ul className="space-y-2">
+              <li>
+                <Link
+                  href="/admin"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Admin Dashboard
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/admin/payments"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Payment Management
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/admin/users"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  User Management
+                </Link>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Disclaimer */}
+        <div className="mt-8 p-4 bg-muted rounded-lg">
+          <p className="text-sm text-muted-foreground text-center">
+            Disclaimer: This platform is for educational purposes only. We do
+            not offer any investment plans or financial advice. We are not
+            responsible for any financial decisions made by users.
+          </p>
         </div>
 
         {/* Bottom Bar */}
@@ -195,7 +203,7 @@ export function Footer({ siteSettings }) {
           <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
             <p className="text-sm text-muted-foreground">
               © {new Date().getFullYear()}{" "}
-              {siteSettings?.siteName || "Digital Edutech"}. All rights
+              {siteSettings?.siteName || "Master Crypto Education"}. All rights
               reserved.
             </p>
             <div className="flex items-center space-x-4 text-sm text-muted-foreground">

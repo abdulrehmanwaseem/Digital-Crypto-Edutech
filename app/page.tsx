@@ -67,9 +67,9 @@ const features = [
     description: "Join a thriving community of crypto enthusiasts",
   },
   {
-    icon: Trophy,
-    title: "Certification",
-    description: "Earn recognized certificates upon course completion",
+    icon: Wallet2,
+    title: "Refferal System",
+    description: "Receive Refferal as you progress along your path",
   },
 ];
 

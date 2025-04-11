@@ -29,14 +29,19 @@ function RegisterContent() {
     name: "",
     email: "",
     occupation: "",
+    incomeRange: "",
+    occupationType: "",
+    phone: "",
     password: "",
     confirmPassword: "",
   });
 
-  const redirectTo = searchParams.get("redirect") || "/dashboard";
-  const referralCode = searchParams.get("ref");
+  const redirectTo = searchParams?.get("redirect") || "/dashboard";
+  const referralCode = searchParams?.get("ref");
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -75,6 +80,9 @@ function RegisterContent() {
           password: formData.password,
           name: formData.name,
           occupation: formData.occupation,
+          incomeRange: formData.incomeRange,
+          occupationType: formData.occupationType,
+          phone: formData.phone,
           referralCode,
         }),
       });
@@ -82,6 +90,11 @@ function RegisterContent() {
       const data = await response.json();
 
       if (!response.ok) {
+        if (data.details) {
+          // Show the first validation error message
+          const errorMessage = data.details[0].message;
+          throw new Error(errorMessage);
+        }
         throw new Error(data.error || "Registration failed");
       }
 
@@ -173,22 +186,6 @@ function RegisterContent() {
                   </svg>
                   Google
                 </Button>
-                <Button
-                  disabled={loading}
-                  variant="outline"
-                  className="hover:bg-muted"
-                  onClick={() =>
-                    toast({ description: "Social login coming soon!" })
-                  }
-                >
-                  <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
-                    <path
-                      fill="currentColor"
-                      d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c5.05-.5 9-4.76 9-9.95z"
-                    />
-                  </svg>
-                  Facebook
-                </Button>
               </div>
               <div className="relative my-8">
                 <div className="absolute inset-0 flex items-center">
@@ -246,6 +243,69 @@ function RegisterContent() {
                     onChange={handleChange}
                     required
                     disabled={loading}
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium" htmlFor="incomeRange">
+                    Income Range
+                  </label>
+                  <select
+                    id="incomeRange"
+                    name="incomeRange"
+                    value={formData.incomeRange}
+                    onChange={handleChange}
+                    required
+                    disabled={loading}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="">Select income range</option>
+                    <option value="0-25000">$0 - $25,000</option>
+                    <option value="25000-50000">$25,000 - $50,000</option>
+                    <option value="50000-75000">$50,000 - $75,000</option>
+                    <option value="75000-100000">$75,000 - $100,000</option>
+                    <option value="100000+">$100,000+</option>
+                  </select>
+                </div>
+
+                <div className="grid gap-2">
+                  <label
+                    className="text-sm font-medium"
+                    htmlFor="occupationType"
+                  >
+                    Occupation Type
+                  </label>
+                  <select
+                    id="occupationType"
+                    name="occupationType"
+                    value={formData.occupationType}
+                    onChange={handleChange}
+                    required
+                    disabled={loading}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="">Select occupation type</option>
+                    <option value="employed">Employed</option>
+                    <option value="self-employed">Self-employed</option>
+                    <option value="unemployed">Unemployed</option>
+                    <option value="student">Student</option>
+                    <option value="retired">Retired</option>
+                  </select>
+                </div>
+
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium" htmlFor="phone">
+                    Phone Number
+                  </label>
+                  <Input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    required
+                    disabled={loading}
+                    placeholder="Enter your phone number"
                   />
                 </div>
 

@@ -184,45 +184,6 @@ export default function PlansPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* Referral Code Input */}
-      <div className="max-w-md mx-auto mb-8">
-        <div className="space-y-2">
-          <label htmlFor="referralCode" className="text-sm font-medium">
-            Have a referral code?
-          </label>
-          <div className="flex gap-2">
-            <Input
-              id="referralCode"
-              placeholder="Enter referral code"
-              value={referralCode}
-              onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-              className={`uppercase ${
-                referralStatus === "valid"
-                  ? "border-green-500"
-                  : referralStatus === "invalid"
-                  ? "border-red-500"
-                  : ""
-              }`}
-            />
-            <Button
-              onClick={() => validateReferralCode(referralCode)}
-              disabled={isValidating || !referralCode}
-              variant="outline"
-            >
-              {isValidating ? "Checking..." : "Apply"}
-            </Button>
-          </div>
-          {referralStatus === "valid" && (
-            <p className="text-sm text-green-600">
-              ✓ Valid referral code applied
-            </p>
-          )}
-          {referralStatus === "invalid" && (
-            <p className="text-sm text-red-600">✗ Invalid referral code</p>
-          )}
-        </div>
-      </div>
-
       {/* Plan Cards */}
       <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4 max-w-7xl mx-auto">
         {isLoading ? (
@@ -338,7 +299,7 @@ export default function PlansPage() {
                   }
                   onClick={() => handlePlanSelection(plan)}
                 >
-                  Get Started Now
+                  CONTINUE WITH OUR COURSE
                 </Button>
                 <p className="text-xs text-center text-muted-foreground mt-3 group-hover:text-primary transition-colors duration-300">
                   {plan.name === "Professional" || plan.name === "Premium"

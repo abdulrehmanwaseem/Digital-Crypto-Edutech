@@ -17,12 +17,11 @@ export async function generateMetadata() {
   const settings = await prisma.siteSettings.findFirst();
 
   return {
-    title: settings?.siteName || "Digital Edutech",
-    description:
-      settings?.description || "Expert-led cryptocurrency education platform",
-    keywords: "crypto, trading, education, blockchain, cryptocurrency",
+    title: "Master Crypto Education",
+    description: "Your platform for crypto education",
+    keywords: "crypto, education, blockchain, cryptocurrency",
     openGraph: {
-      title: settings?.siteName || "Digital Edutech",
+      title: settings?.siteName || "Master Crypto Education",
       description:
         settings?.description || "Expert-led cryptocurrency education platform",
       images: ["/og-image.jpg"],
@@ -55,7 +54,19 @@ export default async function RootLayout({
               <OAuthReferral />
               <SiteHeader session={user} siteSettings={settings} />
               <main className="min-h-screen">{children}</main>
-              <Footer siteSettings={settings} />
+              <Footer
+                siteSettings={
+                  settings || {
+                    id: "1",
+                    siteName: "CryptoEdu",
+                    siteTitle: "Learn Crypto Trading",
+                    description: "Your platform for crypto education",
+                    contactEmail: "contact@cryptoedu.com",
+                    maintenanceMode: false,
+                    updatedAt: new Date(),
+                  }
+                }
+              />
             </ToastProvider>
             <Toaster />
           </SessionProvider>
