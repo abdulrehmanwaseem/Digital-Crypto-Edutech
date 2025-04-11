@@ -81,7 +81,7 @@ export async function POST(req: Request) {
         incomeRange,
         occupationType,
         phone,
-        role: isFirstUser ? "ADMIN" : "USER", // Set role based on whether it's the first user
+        role: isFirstUser ? "ADMIN" : "USER", // Make the first registered user as admin
         referralCode: newReferralCode,
         referredBy,
         profile: {
@@ -90,6 +90,7 @@ export async function POST(req: Request) {
           },
         },
       },
+
       include: {
         profile: true,
       },

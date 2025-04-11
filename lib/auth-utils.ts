@@ -8,19 +8,19 @@ export async function authenticateUser(email: string, password: string) {
       select: {
         id: true,
         email: true,
-        password: true,
+        hashedPassword: true,
         name: true,
         role: true,
         occupation: true,
         referralCode: true,
-      }
+      },
     });
 
-    if (!user || !user.password) {
+    if (!user || !user.hashedPassword) {
       return null;
     }
 
-    const isPasswordValid = await compare(password, user.password);
+    const isPasswordValid = await compare(password, user.hashedPassword);
     if (!isPasswordValid) {
       return null;
     }

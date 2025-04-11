@@ -104,6 +104,7 @@ function RegisterContent() {
         password: formData.password,
         redirect: false,
       });
+      console.log("RESULT: ", result);
 
       if (result?.error) {
         throw new Error("Auto-login failed");
