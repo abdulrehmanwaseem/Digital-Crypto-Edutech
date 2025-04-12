@@ -82,20 +82,20 @@ const defaultProfile = {
 
 export const authConfig = {
   providers: [
-    Google({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      profile(profile: GoogleProfile) {
-        return {
-          id: profile.sub,
-          email: profile.email,
-          name: profile.name,
-          profile: { create: { avatar: profile.picture } },
-          role: "USER" as Role,
-          occupation: "Not specified",
-        };
-      },
-    }),
+    // Google({
+    //   clientId: process.env.GOOGLE_CLIENT_ID!,
+    //   clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    //   profile(profile: GoogleProfile) {
+    //     return {
+    //       id: profile.sub,
+    //       email: profile.email,
+    //       name: profile.name,
+    //       profile: { create: { avatar: profile.picture } },
+    //       role: "USER" as Role,
+    //       occupation: "Not specified",
+    //     };
+    //   },
+    // }),
     Credentials({
       async authorize(credentials) {
         if (!credentials) return null;

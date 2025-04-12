@@ -34,6 +34,6 @@ export async function authenticateUser(email: string, password: string) {
       referralCode: user.referralCode || undefined,
     };
   } catch {
-    return null;
-  }
+    return null;
+  }
 }

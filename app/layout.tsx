@@ -9,6 +9,7 @@ import { SiteHeader } from "@/components/site-header";
 import { currentUser } from "@/lib/utils";
 import { prisma } from "@/lib/prisma";
 import { OAuthReferral } from "@/components/auth/oauth-referral";
+import { ContactButtons } from "@/components/contact-buttons";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -67,6 +68,7 @@ export default async function RootLayout({
                   }
                 }
               />
+              <ContactButtons />
             </ToastProvider>
             <Toaster />
           </SessionProvider>

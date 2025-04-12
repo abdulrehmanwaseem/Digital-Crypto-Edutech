@@ -8,6 +8,7 @@ import {
   Phone,
   MessageSquare,
   MessageCircle,
+  Shield,
 } from "lucide-react";
 
 interface SiteSettings {
@@ -191,10 +192,18 @@ export function Footer({ siteSettings }: { siteSettings: SiteSettings }) {
 
         {/* Disclaimer */}
         <div className="mt-8 p-4 bg-muted rounded-lg">
+          <h4 className="font-semibold mb-2 text-center">
+            Important Disclaimer
+          </h4>
           <p className="text-sm text-muted-foreground text-center">
-            Disclaimer: This platform is for educational purposes only. We do
-            not offer any investment plans or financial advice. We are not
-            responsible for any financial decisions made by users.
+            <strong>Disclaimer:</strong> This platform is for educational
+            purposes only. We do not offer any investment plans or financial
+            advice. We do not solicit or accept investments from students or
+            users. All content is provided strictly for educational purposes to
+            enhance understanding of cryptocurrency trading. Users are solely
+            responsible for any financial decisions they make based on the
+            knowledge gained from our courses. We are not responsible for any
+            financial decisions made by users.
           </p>
         </div>
 
@@ -224,6 +233,52 @@ export function Footer({ siteSettings }: { siteSettings: SiteSettings }) {
                 className="hover:text-foreground transition-colors"
               >
                 Cookie Policy
+              </Link>
+              {/* Add Admin Panel Link (more visible to admins) */}
+              <Link
+                href="/admin"
+                className="hover:text-foreground transition-colors font-medium"
+              >
+                Admin Panel
+              </Link>
+            </div>
+          </div>
+        </div>
+        {/* Admin Panel Section */}
+        <div className="mt-8 border-t pt-8">
+          <h3 className="text-lg font-semibold mb-4 text-center">
+            Administration
+          </h3>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div className="text-center">
+              <h4 className="font-medium mb-2">Support</h4>
+              <p className="text-sm text-muted-foreground">
+                admin@mastercryptoedu.com
+              </p>
+              <p className="text-sm text-muted-foreground">+1 (555) 123-4567</p>
+            </div>
+            <div className="text-center">
+              <h4 className="font-medium mb-2">Technical</h4>
+              <p className="text-sm text-muted-foreground">
+                tech@mastercryptoedu.com
+              </p>
+              <p className="text-sm text-muted-foreground">+1 (555) 987-6543</p>
+            </div>
+            <div className="text-center">
+              <h4 className="font-medium mb-2">Billing</h4>
+              <p className="text-sm text-muted-foreground">
+                billing@mastercryptoedu.com
+              </p>
+              <p className="text-sm text-muted-foreground">+1 (555) 765-4321</p>
+            </div>
+            <div className="text-center">
+              <h4 className="font-medium mb-2">Admin Panel</h4>
+              <Link
+                href="/admin"
+                className="inline-flex items-center text-sm text-primary hover:underline"
+              >
+                <Shield className="mr-1 h-4 w-4" />
+                Access Admin Area
               </Link>
             </div>
           </div>

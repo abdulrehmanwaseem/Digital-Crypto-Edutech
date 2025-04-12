@@ -1,5 +1,13 @@
 export const adminRoute = ["/admin/*"];
-export const publicRoutes = ["/", "/about", "/contact", "/plans", "/services", '/pricing'];
+export const publicRoutes = [
+  "/",
+  "/about",
+  "/contact",
+  "/plans",
+  "/services",
+  "/pricing",
+  "/feedback", // Added feedback to public routes
+];
 
 export const authRoutes = ["/login", "/register", "/error"];
 

@@ -30,6 +30,9 @@ export function ProfileClient({ user }: ProfileClientProps) {
   const [withdrawalAddress, setWithdrawalAddress] = useState(
     user.withdrawalAddress || ""
   );
+  const [withdrawalAddressType, setWithdrawalAddressType] = useState(
+    user.withdrawalAddress?.startsWith("T") ? "TRC20" : "BEP20"
+  );
   const [loading, setLoading] = useState(false);
 
   const handleWithdrawalAddressUpdate = async (e: React.FormEvent) => {
@@ -89,21 +92,45 @@ export function ProfileClient({ user }: ProfileClientProps) {
               <div className="space-y-4">
                 <div>
                   <label
+                    htmlFor="withdrawalAddressType"
+                    className="block text-sm font-medium"
+                  >
+                    USDT Withdrawal Network
+                  </label>
+                  <select
+                    id="withdrawalAddressType"
+                    value={withdrawalAddressType}
+                    onChange={(e) => setWithdrawalAddressType(e.target.value)}
+                    className="mt-2 w-full rounded-md border border-input p-2"
+                  >
+                    <option value="TRC20">TRC20 (TRON Network)</option>
+                    <option value="BEP20">BEP20 (Binance Smart Chain)</option>
+                  </select>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Select the network for your USDT withdrawal address
+                  </p>
+                </div>
+                <div>
+                  <label
                     htmlFor="withdrawalAddress"
                     className="block text-sm font-medium"
                   >
-                    USDT Withdrawal Address
+                    USDT {withdrawalAddressType} Address
                   </label>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Enter your USDT withdrawal address (BEP20 or TRC20)
-                  </p>
                   <Input
                     id="withdrawalAddress"
                     value={withdrawalAddress}
                     onChange={(e) => setWithdrawalAddress(e.target.value)}
-                    placeholder="0x..."
+                    placeholder={
+                      withdrawalAddressType === "TRC20" ? "T..." : "0x..."
+                    }
                     className="mt-2"
                   />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {withdrawalAddressType === "TRC20"
+                      ? "TRC20 addresses typically start with 'T'"
+                      : "BEP20 addresses typically start with '0x'"}
+                  </p>
                 </div>
               </div>
 

@@ -304,7 +304,7 @@ export default function PlansPage() {
                 <p className="text-xs text-center text-muted-foreground mt-3 group-hover:text-primary transition-colors duration-300">
                   {plan.name === "Professional" || plan.name === "Premium"
                     ? "Instant Access to All Features"
-                    : "7-Day Money-Back Guarantee"}
+                    : "Comprehensive Learning Experience"}
                 </p>
               </div>
             </Card>
@@ -317,7 +317,7 @@ export default function PlansPage() {
           <div className="flex items-center gap-2">
             <Check className="h-5 w-5 text-primary" />
             <span className="text-sm font-medium">
-              7-Day Money-Back Guarantee
+              Instant Access to All Features
             </span>
           </div>
           <div className="h-4 w-px bg-border" />

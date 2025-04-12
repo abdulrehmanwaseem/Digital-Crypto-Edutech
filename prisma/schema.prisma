@@ -79,15 +79,19 @@ model Profile {
 }
 
 model Course {
-  id          String   @id @default(cuid())
-  title       String
-  description String   @db.Text
-  price       Float
-  features    String[] @default([])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  users       User[]
-  payments    Payment[]
+  id            String   @id @default(cuid())
+  title         String
+  description   String   @db.Text
+  imageUrl      String?
+  price         Float
+  duration      String?
+  features      String[] @default([])
+  stipend       Json?
+  referralBonus Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  users         User[]
+  payments      Payment[]
 }
 
 model Payment {

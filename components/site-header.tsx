@@ -314,7 +314,7 @@ export function SiteHeader({ session, siteSettings }) {
                 <Button variant="ghost">Login</Button>
               </Link>
               <Link href="/register">
-                <Button>Get Started</Button>
+                <Button>CONTINUE WITH OUR COURSE </Button>
               </Link>
               {/* Mobile Menu Button */}
               <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>

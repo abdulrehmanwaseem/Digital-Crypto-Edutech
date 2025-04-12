@@ -9,12 +9,12 @@ export default auth((req) => {
   const isPublicRoute = publicRoutes.includes(nextUrl.pathname);
   const isAuthRoute = authRoutes.includes(nextUrl.pathname);
 
-  if (nextUrl.pathname.startsWith("/images/")) {
+  if (nextUrl.pathname.startsWith('/images/')) {
     return NextResponse.next();
   }
   // API routes should be handled separately
   if (nextUrl.pathname.startsWith("/api")) {
-    return NextResponse.next();
+    return NextResponse.next(); 
   }
 
   // Auth routes (login, register, error)
@@ -30,6 +30,7 @@ export default auth((req) => {
     return NextResponse.next();
   }
 
+
   // Protected routes
   if (!isLoggedIn) {
     let callbackUrl = nextUrl.pathname;
@@ -38,15 +39,16 @@ export default auth((req) => {
     }
 
     const encodedCallbackUrl = encodeURIComponent(callbackUrl);
-    return Response.redirect(
-      new URL(`/login?redirect=${encodedCallbackUrl}`, nextUrl)
-    );
+    return Response.redirect(new URL(
+      `/login?redirect=${encodedCallbackUrl}`,
+      nextUrl
+    ));
   }
 
   // Admin routes
-  if (nextUrl.pathname.startsWith("/admin")) {
+  if (nextUrl.pathname.startsWith('/admin')) {
     if (auth?.user?.role !== Role.ADMIN) {
-      return Response.redirect(new URL("/dashboard", nextUrl));
+      return Response.redirect(new URL('/dashboard', nextUrl));
     }
     return NextResponse.next();
   }
@@ -66,4 +68,4 @@ export const config = {
      */
     "/((?!_next/static|_next/image|favicon.ico|public).*)",
   ],
-};
+}

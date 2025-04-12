@@ -11,17 +11,32 @@ export const currentUser = async () => {
   return session?.user;
 };
 
-export function generateReferralCode(): string {
-  const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  const codeLength = 8;
-  let code = "";
+/**
+ * Generates a referral code based on user name and random string
+ * @param userName User's name or a fallback string
+ * @returns A unique referral code
+ */
+export function generateReferralCode(userName?: string): string {
+  // Clean and format the user name if provided
+  const baseName = userName
+    ? userName
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "")
+        .slice(0, 8)
+    : "user";
 
-  for (let i = 0; i < codeLength; i++) {
-    const randomIndex = Math.floor(Math.random() * characters.length);
-    code += characters[randomIndex];
+  // Generate a random alphanumeric string
+  const randomChars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // Removed confusing chars like 0, O, 1, I
+  let randomPart = "";
+
+  for (let i = 0; i < 6; i++) {
+    randomPart += randomChars.charAt(
+      Math.floor(Math.random() * randomChars.length)
+    );
   }
 
-  return code;
+  // Combine name and random part with a separator
+  return `${baseName.slice(0, 4)}${randomPart}`;
 }
 
 export function formatCurrency(amount: number): string {

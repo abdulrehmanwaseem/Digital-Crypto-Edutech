@@ -19,7 +19,7 @@ const courses = [
     stipend: null,
     referralBonus: {
       amount: 10, // 10% for $30 course
-      type: "percentage",
+      type: "percentage", // Change from "fixed" to "percentage"
       tiers: [
         { threshold: 3, bonus: 12 },
         { threshold: 5, bonus: 15 },
@@ -42,6 +42,7 @@ const courses = [
       "Basic to advance curriculum coverage",
       "Complete crypto feature access",
       "24/7 Customer Support",
+      "Crypto Signal Access",
       "Technical Analysis Resources",
       "Fundamental Analysis Training",
     ],
@@ -71,6 +72,7 @@ const courses = [
       "Basic to advance curriculum coverage",
       "Complete crypto feature access",
       "24/7 Customer Support",
+      "Crypto Signal Access",
       "Technical Analysis Resources",
       "Fundamental Analysis Training",
       "Priority Support",
@@ -108,6 +110,7 @@ const courses = [
       "Basic to advance curriculum coverage",
       "Complete crypto feature access",
       "24/7 Customer Support",
+      "Crypto Signal Access",
       "Technical Analysis Resources",
       "Fundamental Analysis Training",
       "Priority Support",

@@ -90,7 +90,6 @@ const plans = [
       "Basic to advance curriculum coverage",
       "Complete crypto feature access",
       "24/7 Customer Support",
-      "Crypto Signal Access",
       "Technical Analysis Resources",
     ],
   },
