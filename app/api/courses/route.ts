@@ -22,6 +22,7 @@ export async function GET() {
 
     return NextResponse.json(courses);
   } catch (error) {
+    console.log(error);
     return NextResponse.json(
       { error: "Failed to load courses" },
       { status: 500 }

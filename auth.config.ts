@@ -119,8 +119,6 @@ export const authConfig = {
         where: { id: token.id as string },
         include: {
           profile: true,
-          referralStats: true,
-          wallet: true,
         },
       })) as (DbUser & { referralStats: any; wallet: any }) | null;
 

@@ -130,11 +130,6 @@ export default function DashboardPage() {
 
   const fetchUserData = async () => {
     try {
-      const response = await fetch("/api/dashboard");
-      if (!response.ok) throw new Error("Failed to fetch dashboard data");
-      const data = await response.json();
-      setCourses(data.courses);
-      setDashboardStats(data.stats);
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
     } finally {

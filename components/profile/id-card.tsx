@@ -53,7 +53,7 @@ export function IDCard({ user }: IDCardProps) {
         {/* Company Logo on top right */}
         <div className="absolute top-4 right-4 w-20 h-20">
           <Image
-            src="/images/logo.png" // Make sure this path is correct
+            src="/public/images/logo.png" // Make sure this path is correct
             alt="Company Logo"
             width={80}
             height={80}
@@ -85,23 +85,26 @@ export function IDCard({ user }: IDCardProps) {
           <div className="space-y-4">
             <div>
               <label className="text-sm text-gray-500">Full Name</label>
-              <p className="font-semibold">{user.name}</p>
+              <p className="font-semibold text-gray-700">{user.name}</p>
             </div>
             <div>
               <label className="text-sm text-gray-500">Email</label>
-              <p className="font-semibold">{user.email}</p>
+              <p className="font-semibold text-gray-700">{user.email}</p>
             </div>
             <div>
               <label className="text-sm text-gray-500">Occupation</label>
-              <p className="font-semibold">{user.occupation}</p>
+              <p className="font-semibold text-gray-700">{user.occupation}</p>
             </div>
           </div>
 
           {/* Footer */}
           <div className="mt-6 pt-4 border-t">
             <div className="flex justify-between items-center text-sm text-gray-500">
-              <span>Valid until: Dec 31, 2025</span>
-              <span>ID: {user.email.split("@")[0]}</span>
+              <span>Valid until: Lifetime</span>
+              <span>
+                ID:{" "}
+                {user.email.split("@")[0] + Math.floor(Math.random() * 2300)}
+              </span>
             </div>
           </div>
 
