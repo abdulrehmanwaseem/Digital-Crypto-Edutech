@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Loader2, CheckCircle } from "lucide-react";
 import { signIn } from "next-auth/react";
+import { OAuthReferral } from "@/components/auth/oauth-referral";
 
 export default function RegisterPage() {
   return (
@@ -119,6 +120,28 @@ function RegisterContent() {
 
       if (result?.error) {
         throw new Error("Auto-login failed");
+      }
+
+      // Apply referral bonus if a referral code was used
+      if (referralCode) {
+        try {
+          const referralResponse = await fetch("/api/referrals/apply", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ code: referralCode }),
+          });
+
+          if (!referralResponse.ok) {
+            console.error(
+              "Failed to apply referral bonus:",
+              await referralResponse.json()
+            );
+          }
+        } catch (error) {
+          console.error("Error applying referral bonus:", error);
+        }
       }
 
       toast({
@@ -385,6 +408,7 @@ function RegisterContent() {
           </Card>
         </div>
       </main>
+      <OAuthReferral />
     </div>
   );
 }

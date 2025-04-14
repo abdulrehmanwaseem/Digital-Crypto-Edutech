@@ -64,6 +64,64 @@ interface PaymentStatus {
   isPaymentVerified: boolean;
 }
 
+interface DashboardData {
+  courses: Course[];
+  stats: {
+    totalCourses: number;
+    completedCourses: number;
+    inProgressCourses: number;
+    totalEarnings: number;
+    referralEarnings: number;
+  };
+  recentPayments: Array<{
+    id: string;
+    amount: number;
+    status: string;
+    courseName: string;
+    coursePrice: number;
+    date: string;
+  }>;
+  referralStats: {
+    referralCode: string;
+    totalReferrals: number;
+    activeReferrals: number;
+    totalEarnings: number;
+    wallet: {
+      balance: number;
+      referralBalance: number;
+    } | null;
+    referredUsers: Array<{
+      id: string;
+      name: string;
+      email: string;
+      image: string;
+      createdAt: string;
+      payments: Array<{
+        amount: number;
+        status: string;
+      }>;
+    }>;
+    recentBonuses: Array<{
+      id: string;
+      amount: number;
+      type: string;
+      status: string;
+      createdAt: string;
+      referredUser: {
+        id: string;
+        name: string;
+        email: string;
+        image: string;
+      };
+      course?: {
+        id: string;
+        title: string;
+        imageUrl: string;
+      };
+    }>;
+  };
+}
+
 export default function DashboardPage() {
   const { data: session } = useSession();
   const router = useRouter();
@@ -130,6 +188,14 @@ export default function DashboardPage() {
 
   const fetchUserData = async () => {
     try {
+      setIsLoading(true);
+      const response = await fetch("/api/dashboard");
+      if (!response.ok) throw new Error("Failed to fetch dashboard data");
+
+      const data: DashboardData = await response.json();
+
+      setCourses(data.courses);
+      setDashboardStats(data.stats);
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
     } finally {
@@ -383,7 +449,8 @@ export default function DashboardPage() {
         </Dialog>
       </div>
 
-      {/* Show blur overlay if conditions are not met */}
+
+      {/* Show blur overlay if conditions are not met
       {(!paymentStatus?.hasPurchasedCourse ||
         !paymentStatus?.isPaymentVerified) && (
         <BlurOverlay
@@ -399,7 +466,7 @@ export default function DashboardPage() {
               : window.open("contact@cryptoedu.com")
           }
         />
-      )}
-    </div>
+      )} */}
+    </div>  
   );
 }

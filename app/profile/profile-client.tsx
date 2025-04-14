@@ -13,6 +13,7 @@ interface ProfileClientProps {
     name: string;
     email: string;
     occupation: string;
+    referralCode?: string;
     profile?: {
       avatar?: string;
       bio?: string;
@@ -65,6 +66,15 @@ export function ProfileClient({ user }: ProfileClientProps) {
     }
   };
 
+  const handleCopyReferralLink = () => {
+    const referralLink = `${window.location.origin}/register?ref=${user.referralCode}`;
+    navigator.clipboard.writeText(referralLink);
+    toast({
+      title: "Success",
+      description: "Referral link copied to clipboard",
+    });
+  };
+
   return (
     <div className="container mx-auto py-8">
       <h1 className="text-3xl font-bold mb-8">Profile Settings</h1>
@@ -73,6 +83,7 @@ export function ProfileClient({ user }: ProfileClientProps) {
           <TabsTrigger value="profile">Profile Information</TabsTrigger>
           <TabsTrigger value="id-card">ID Card</TabsTrigger>
           <TabsTrigger value="withdrawal">Withdrawal Settings</TabsTrigger>
+          <TabsTrigger value="referral">Referral Link</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile" className="space-y-6">
@@ -138,6 +149,40 @@ export function ProfileClient({ user }: ProfileClientProps) {
                 {loading ? "Updating..." : "Update Withdrawal Address"}
               </Button>
             </form>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="referral" className="space-y-6">
+          <div className="max-w-md mx-auto">
+            <div className="space-y-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium">
+                    Your Referral Code
+                  </label>
+                  <div className="mt-2 flex items-center space-x-2">
+                    <Input
+                      value={
+                        "http://localhost:3000/register?ref=" +
+                          user.referralCode || ""
+                      }
+                      readOnly
+                      className="font-mono"
+                    />
+                    <Button
+                      type="button"
+                      onClick={handleCopyReferralLink}
+                      disabled={!user.referralCode}
+                    >
+                      Copy Link
+                    </Button>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Share this link with friends to earn referral bonuses
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </TabsContent>
       </Tabs>

@@ -8,12 +8,6 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth();
-
-  if (!session?.user?.role || session.user.role !== "ADMIN") {
-    redirect("/");
-  }
-
   return (
     <div className="flex h-screen flex-col lg:flex-row">
       <AdminSidebar />

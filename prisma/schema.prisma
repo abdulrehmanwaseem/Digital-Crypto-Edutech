@@ -12,6 +12,38 @@ enum Role {
   ADMIN
 }
 
+enum PaymentStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
+enum BonusType {
+  REGISTRATION
+  COURSE_PURCHASE
+  SUBSCRIPTION
+  SPECIAL_PROMOTION
+}
+
+enum TransactionType {
+  REFERRAL_BONUS
+  WITHDRAWAL
+  COURSE_PURCHASE
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum WithdrawalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
 model Account {
   id                String  @id @default(cuid())
   userId            String
@@ -62,6 +94,11 @@ model User {
   profile          Profile?
   courses          Course[]
   payments         Payment[]
+  referralBonuses  ReferralBonus[] // New relationship
+  referredBonuses  ReferralBonus[] @relation("ReferredUser") // New relationship for referred users
+  referralStats    ReferralStats?  // New relationship
+  wallet           Wallet?
+  withdrawals      Withdrawal[]    // New relationship for withdrawals
 }
 
 model Profile {
@@ -92,6 +129,7 @@ model Course {
   updatedAt     DateTime @updatedAt
   users         User[]
   payments      Payment[]
+  referralBonuses ReferralBonus[]
 }
 
 model Payment {
@@ -114,5 +152,77 @@ model SiteSettings {
   description     String    @default("Your platform for crypto education")
   contactEmail    String    @default("contact@cryptoedu.com")
   maintenanceMode Boolean   @default(false)
+  referralConfig  Json?     // Configuration for referral bonuses
   updatedAt       DateTime  @updatedAt
+}
+
+
+model ReferralBonus {
+  id              String   @id @default(cuid())
+  userId          String   // User who earned the bonus
+  referredUserId  String   // User who was referred
+  courseId        String?  // Optional - if bonus is tied to a course purchase
+  amount          Float
+  type            BonusType @default(REGISTRATION)
+  status          PaymentStatus   @default(PENDING)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  referredUser    User     @relation("ReferredUser", fields: [referredUserId], references: [id], onDelete: Cascade)
+  course          Course?  @relation(fields: [courseId], references: [id], onDelete: SetNull)
+}
+
+model ReferralStats {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  totalReferrals  Int      @default(0)
+  activeReferrals Int      @default(0)
+  totalEarnings   Float    @default(0)
+  lastPayout      DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Wallet {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  balance         Float    @default(0)
+  referralBalance Float    @default(0)
+  lastUpdated     DateTime @updatedAt
+  
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions    WalletTransaction[]
+  withdrawals     Withdrawal[]
+}
+
+model WalletTransaction {
+  id          String           @id @default(cuid())
+  walletId    String
+  amount      Float
+  type        TransactionType
+  status      TransactionStatus @default(PENDING)
+  description String?
+  createdAt   DateTime         @default(now())
+  
+  wallet      Wallet           @relation(fields: [walletId], references: [id], onDelete: Cascade)
+}
+
+model Withdrawal {
+  id             String           @id @default(cuid())
+  userId         String
+  walletId       String
+  amount         Float
+  status         WithdrawalStatus @default(PENDING)
+  paymentMethod  String
+  accountDetails Json
+  notes          String?
+  processedAt    DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wallet         Wallet           @relation(fields: [walletId], references: [id], onDelete: Cascade)
 }

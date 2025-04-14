@@ -45,7 +45,9 @@ export default auth((req) => {
 
   // Admin routes
   if (nextUrl.pathname.startsWith("/admin")) {
-    if (auth?.user?.email !== "admin@gmail.com") {
+    const userRole = auth?.user?.role;
+    console.log(auth?.user);
+    if (!userRole || userRole !== "ADMIN") {
       return Response.redirect(new URL("/dashboard", nextUrl));
     }
     return NextResponse.next();

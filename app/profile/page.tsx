@@ -14,6 +14,7 @@ export default async function ProfilePage() {
     where: { email: session.user.email },
     include: {
       profile: true,
+      referralStats: true,
     },
   });
 
@@ -21,5 +22,24 @@ export default async function ProfilePage() {
     redirect("/auth/login");
   }
 
-  return <ProfileClient user={user} />;
+  // Transform user data to match the expected interface
+  const userData = {
+    name: user.name || "",
+    email: user.email || "",
+    occupation: user.occupation || "",
+    referralCode: user.referralCode || "",
+    profile: user.profile
+      ? {
+          avatar: user.profile.avatar || undefined,
+          bio: user.profile.bio || undefined,
+          location: user.profile.location || undefined,
+          twitter: user.profile.twitter || undefined,
+          telegram: user.profile.telegram || undefined,
+          website: user.profile.website || undefined,
+        }
+      : undefined,
+    withdrawalAddress: user.withdrawalAddress || undefined,
+  };
+
+  return <ProfileClient user={userData} />;
 }

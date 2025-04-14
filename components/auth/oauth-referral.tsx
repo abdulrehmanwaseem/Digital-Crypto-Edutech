@@ -15,12 +15,12 @@ export function OAuthReferral() {
       if (!session?.user || !referralCode) return;
 
       try {
-        const response = await fetch("/api/auth/apply-referral", {
+        const response = await fetch("/api/referrals/apply", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ referralCode }),
+          body: JSON.stringify({ code: referralCode }),
         });
 
         const data = await response.json();
@@ -29,7 +29,7 @@ export function OAuthReferral() {
           throw new Error(data.error || "Failed to apply referral code");
         }
 
-        toast.success("Referral code applied successfully!");
+        toast.success("Referral bonus applied successfully!");
       } catch (error) {
         console.error("Apply Referral Error:", error);
         toast.error(

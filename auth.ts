@@ -30,22 +30,37 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         referralCode: existingUser.referralCode || undefined,
         profile: existingUser.profile
           ? {
-              avatar: existingUser.profile.avatar,
-              bio: existingUser.profile.bio,
-              location: existingUser.profile.location,
-              achievements: existingUser.profile.achievements,
-              activities: existingUser.profile.activities,
+              avatar: existingUser?.profile?.avatar || "",
+              bio: existingUser?.profile?.bio || "",
+              location: existingUser?.profile?.location || "",
+              achievements: existingUser?.profile?.achievements || [],
+              activities: existingUser?.profile?.activities || [],
             }
           : undefined,
       };
     },
     async session({ session, token }) {
+      if (!token.role && token.sub) {
+        try {
+          const user = await getUserById(token.sub);
+          if (user) {
+            token.role = user.role;
+          } else {
+            token.role = "USER";
+            console.warn(`User with ID ${token.sub} not found in database`);
+          }
+        } catch (error) {
+          console.error("Error fetching user role:", error);
+          token.role = "USER";
+        }
+      }
+
       return {
         ...session,
         user: {
           ...session.user,
           id: token.sub!,
-          role: token.role as Role,
+          role: (token.role as Role) || "USER",
           occupation: token.occupation as string,
           referralCode: token.referralCode as string | undefined,
           profile: token.profile as

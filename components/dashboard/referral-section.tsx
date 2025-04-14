@@ -13,6 +13,10 @@ import {
   LinkIcon,
   Share2,
   Download,
+  Gift,
+  Clock,
+  CheckCircle,
+  XCircle,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
@@ -24,17 +28,49 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { formatDistanceToNow } from "date-fns";
 
 interface ReferralData {
-  code: string;
-  totalReferrals: number;
-  activeReferrals: number;
-  earnings: number;
+  stats: {
+    totalReferrals: number;
+    activeReferrals: number;
+    totalEarnings: number;
+  };
+  referralCode: string;
+  wallet: {
+    balance: number;
+    referralBalance: number;
+  } | null;
   referredUsers: Array<{
+    id: string;
     name: string;
     email: string;
-    joinedAt: string;
-    totalSpent?: number;
+    image: string;
+    createdAt: string;
+    payments: Array<{
+      amount: number;
+      status: string;
+    }>;
+  }>;
+  recentBonuses: Array<{
+    id: string;
+    amount: number;
+    type: string;
+    status: string;
+    createdAt: string;
+    referredUser: {
+      id: string;
+      name: string;
+      email: string;
+      image: string;
+    };
+    course?: {
+      id: string;
+      title: string;
+      imageUrl: string;
+    };
   }>;
 }
 
@@ -52,9 +88,9 @@ export function ReferralSection() {
 
   useEffect(() => {
     // Generate the full referral link when referral code is available
-    if (referralData?.code) {
+    if (referralData?.referralCode) {
       const baseUrl = window.location.origin;
-      const link = `${baseUrl}/register?ref=${referralData.code}`;
+      const link = `${baseUrl}/register?ref=${referralData.referralCode}`;
       setReferralLink(link);
 
       // Generate QR code URL
@@ -135,6 +171,92 @@ export function ReferralSection() {
     };
   };
 
+  // Get status badge for bonus
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "PENDING":
+        return (
+          <Badge
+            variant="outline"
+            className="bg-yellow-50 text-yellow-700 border-yellow-200"
+          >
+            <Clock className="h-3 w-3 mr-1" />
+            Pending
+          </Badge>
+        );
+      case "PAID":
+        return (
+          <Badge
+            variant="outline"
+            className="bg-green-50 text-green-700 border-green-200"
+          >
+            <CheckCircle className="h-3 w-3 mr-1" />
+            Paid
+          </Badge>
+        );
+      case "CANCELLED":
+        return (
+          <Badge
+            variant="outline"
+            className="bg-red-50 text-red-700 border-red-200"
+          >
+            <XCircle className="h-3 w-3 mr-1" />
+            Cancelled
+          </Badge>
+        );
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  // Get type badge for bonus
+  const getTypeBadge = (type: string) => {
+    switch (type) {
+      case "REGISTRATION":
+        return (
+          <Badge
+            variant="outline"
+            className="bg-blue-50 text-blue-700 border-blue-200"
+          >
+            <UserCheck className="h-3 w-3 mr-1" />
+            Registration
+          </Badge>
+        );
+      case "COURSE_PURCHASE":
+        return (
+          <Badge
+            variant="outline"
+            className="bg-purple-50 text-purple-700 border-purple-200"
+          >
+            <Gift className="h-3 w-3 mr-1" />
+            Course Purchase
+          </Badge>
+        );
+      case "SUBSCRIPTION":
+        return (
+          <Badge
+            variant="outline"
+            className="bg-indigo-50 text-indigo-700 border-indigo-200"
+          >
+            <DollarSign className="h-3 w-3 mr-1" />
+            Subscription
+          </Badge>
+        );
+      case "SPECIAL_PROMOTION":
+        return (
+          <Badge
+            variant="outline"
+            className="bg-pink-50 text-pink-700 border-pink-200"
+          >
+            <Gift className="h-3 w-3 mr-1" />
+            Special Promotion
+          </Badge>
+        );
+      default:
+        return <Badge variant="outline">{type}</Badge>;
+    }
+  };
+
   if (isLoading) {
     return <ReferralSkeleton />;
   }
@@ -156,7 +278,7 @@ export function ReferralSection() {
     );
   }
 
-  const tierInfo = getTierInfo(referralData.earnings);
+  const tierInfo = getTierInfo(referralData.stats.totalEarnings);
 
   return (
     <div className="space-y-6">
@@ -170,7 +292,7 @@ export function ReferralSection() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {referralData.totalReferrals}
+              {referralData.stats.totalReferrals}
             </div>
           </CardContent>
         </Card>
@@ -183,7 +305,7 @@ export function ReferralSection() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {referralData.activeReferrals}
+              {referralData.stats.activeReferrals}
             </div>
           </CardContent>
         </Card>
@@ -196,8 +318,13 @@ export function ReferralSection() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ${referralData.earnings.toFixed(2)}
+              ${referralData.stats.totalEarnings.toFixed(2)}
             </div>
+            {referralData.wallet && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Available: ${referralData.wallet.referralBalance.toFixed(2)}
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -235,7 +362,7 @@ export function ReferralSection() {
               <div className="flex justify-between text-xs">
                 <span>Progress to next tier ({tierInfo.next}%)</span>
                 <span>
-                  ${referralData.earnings.toFixed(2)} / $
+                  ${referralData.stats.totalEarnings.toFixed(2)} / $
                   {tierInfo.nextThreshold}
                 </span>
               </div>
@@ -249,101 +376,195 @@ export function ReferralSection() {
               className="flex-1"
               onClick={() => setShowQRCode(true)}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="mr-2"
-              >
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                <rect x="7" y="7" width="3" height="3"></rect>
-                <rect x="14" y="7" width="3" height="3"></rect>
-                <rect x="7" y="14" width="3" height="3"></rect>
-                <rect x="14" y="14" width="3" height="3"></rect>
-              </svg>
-              QR Code
+              <Download className="h-4 w-4 mr-2" />
+              Download QR Code
             </Button>
-            <Button className="flex-1" onClick={shareReferralLink}>
-              <Share2 className="mr-2 h-4 w-4" />
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={shareReferralLink}
+            >
+              <Share2 className="h-4 w-4 mr-2" />
               Share Link
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      {referralData.referredUsers.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Referred Users</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {referralData.referredUsers.map((user, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between border-b last:border-0 pb-2"
-                >
-                  <div>
-                    <div className="font-medium">{user.name}</div>
-                    <div className="text-sm text-muted-foreground">
-                      Joined {new Date(user.joinedAt).toLocaleDateString()}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-medium">${user?.totalSpent || 0}</div>
-                    <div className="text-sm text-muted-foreground">
-                      Total Spent
-                    </div>
-                  </div>
+      <Tabs defaultValue="referred">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="referred">Referred Users</TabsTrigger>
+          <TabsTrigger value="bonuses">Recent Bonuses</TabsTrigger>
+        </TabsList>
+        <TabsContent value="referred" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Referred Users</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {referralData.referredUsers.length === 0 ? (
+                <div className="text-center py-6 text-muted-foreground">
+                  No referred users yet. Share your referral link to start
+                  earning!
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+              ) : (
+                <div className="space-y-4">
+                  {referralData.referredUsers.map((user) => (
+                    <div
+                      key={user.id}
+                      className="flex items-center justify-between p-4 border rounded-lg"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="relative h-10 w-10 rounded-full overflow-hidden">
+                          {user.image ? (
+                            <Image
+                              src={user.image}
+                              alt={user.name || "User"}
+                              fill
+                              className="object-cover"
+                            />
+                          ) : (
+                            <div className="h-full w-full bg-muted flex items-center justify-center">
+                              <Users className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium">
+                            {user.name || "Anonymous User"}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {user.email}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Joined{" "}
+                            {formatDistanceToNow(new Date(user.createdAt), {
+                              addSuffix: true,
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium">
+                          $
+                          {user.payments
+                            .reduce((sum, payment) => sum + payment.amount, 0)
+                            .toFixed(2)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {user.payments.length} purchases
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="bonuses" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Bonuses</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {referralData.recentBonuses.length === 0 ? (
+                <div className="text-center py-6 text-muted-foreground">
+                  No bonuses earned yet. Share your referral link to start
+                  earning!
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {referralData.recentBonuses.map((bonus) => (
+                    <div
+                      key={bonus.id}
+                      className="flex items-center justify-between p-4 border rounded-lg"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="relative h-10 w-10 rounded-full overflow-hidden">
+                          {bonus.referredUser.image ? (
+                            <Image
+                              src={bonus.referredUser.image}
+                              alt={bonus.referredUser.name || "User"}
+                              fill
+                              className="object-cover"
+                            />
+                          ) : (
+                            <div className="h-full w-full bg-muted flex items-center justify-center">
+                              <Users className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium">
+                            {bonus.referredUser.name || "Anonymous User"}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {bonus.referredUser.email}
+                          </p>
+                          <div className="flex gap-2 mt-1">
+                            {getTypeBadge(bonus.type)}
+                            {getStatusBadge(bonus.status)}
+                          </div>
+                          {bonus.course && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Course: {bonus.course.title}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium">
+                          ${bonus.amount.toFixed(2)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDistanceToNow(new Date(bonus.createdAt), {
+                            addSuffix: true,
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
-      {/* QR Code Dialog */}
       <Dialog open={showQRCode} onOpenChange={setShowQRCode}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Referral QR Code</DialogTitle>
+            <DialogTitle>Your Referral QR Code</DialogTitle>
           </DialogHeader>
-          <div className="flex flex-col items-center justify-center p-6">
-            {qrCodeURL ? (
-              <div className="bg-white p-4 rounded-lg">
+          <div className="flex flex-col items-center justify-center p-4">
+            {qrCodeURL && (
+              <div className="relative h-64 w-64 mb-4">
                 <Image
                   src={qrCodeURL}
                   alt="Referral QR Code"
-                  width={200}
-                  height={200}
-                  className="w-48 h-48"
+                  fill
+                  className="object-contain"
                 />
               </div>
-            ) : (
-              <div className="animate-pulse bg-muted w-48 h-48 rounded-lg"></div>
             )}
-            <p className="mt-4 text-sm text-center text-muted-foreground">
-              Scan this code to visit your referral link
+            <p className="text-sm text-muted-foreground text-center mb-4">
+              Scan this QR code to join using your referral link
             </p>
             <Button
-              className="mt-4"
+              variant="outline"
               onClick={() => {
-                // Download QR code
-                const link = document.createElement("a");
-                link.href = qrCodeURL || "";
-                link.download = "referral-qr-code.png";
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+                if (qrCodeURL) {
+                  const link = document.createElement("a");
+                  link.href = qrCodeURL;
+                  link.download = "referral-qr-code.png";
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                }
               }}
             >
-              <Download className="mr-2 h-4 w-4" />
+              <Download className="h-4 w-4 mr-2" />
               Download QR Code
             </Button>
           </div>
@@ -353,15 +574,14 @@ export function ReferralSection() {
   );
 }
 
-// ReferralSkeleton component for loading state
 function ReferralSkeleton() {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-3">
-        {[1, 2, 3].map((_, i) => (
+        {[1, 2, 3].map((i) => (
           <Card key={i}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <Skeleton className="h-5 w-24" />
+              <Skeleton className="h-4 w-24" />
               <Skeleton className="h-4 w-4 rounded-full" />
             </CardHeader>
             <CardContent>
@@ -376,21 +596,25 @@ function ReferralSkeleton() {
           <Skeleton className="h-6 w-32" />
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-5 w-5 rounded-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-full" />
+          <div className="flex gap-3">
             <Skeleton className="h-10 flex-1" />
-            <Skeleton className="h-10 w-10" />
+            <Skeleton className="h-10 flex-1" />
           </div>
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <Skeleton className="h-4 w-40" />
-              <Skeleton className="h-4 w-12" />
-            </div>
-            <Skeleton className="h-2 w-full" />
-          </div>
-          <div className="flex gap-3 mt-4">
-            <Skeleton className="h-10 flex-1" />
-            <Skeleton className="h-10 flex-1" />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-6 w-32" />
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-20 w-full" />
+            ))}
           </div>
         </CardContent>
       </Card>

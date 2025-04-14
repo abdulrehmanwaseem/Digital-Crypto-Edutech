@@ -28,8 +28,46 @@ import { useFocusTrap } from "@/hooks/use-focus-trap";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 
+interface WalletData {
+  balance: number;
+  referralBalance: number;
+  lastUpdated: string;
+}
+
+interface PaymentMethodCardProps {
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+}
+
+function PaymentMethodCard({
+  title,
+  description,
+  icon,
+  onClick,
+  disabled,
+}: PaymentMethodCardProps) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="w-full p-4 rounded-lg border hover:border-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      <div className="flex items-center gap-4">
+        <div className="bg-primary/10 p-2 rounded-full">{icon}</div>
+        <div className="text-left">
+          <h4 className="font-medium">{title}</h4>
+          <p className="text-sm text-muted-foreground">{description}</p>
+        </div>
+      </div>
+    </button>
+  );
+}
+
 export function WalletOverview() {
-  const [wallet, setWallet] = useState<any>(null);
+  const [wallet, setWallet] = useState<WalletData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isWithdrawDialogOpen, setIsWithdrawDialogOpen] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState("");
@@ -76,6 +114,7 @@ export function WalletOverview() {
       const data = await response.json();
       setWallet(data);
     } catch (error) {
+      console.error("Wallet fetch error:", error);
       toast({
         variant: "destructive",
         title: "Failed to load wallet",
@@ -97,54 +136,54 @@ export function WalletOverview() {
       return;
     }
 
+    const amount = parseFloat(withdrawAmount);
+    if (amount > (wallet?.referralBalance || 0)) {
+      toast({
+        variant: "destructive",
+        title: "Insufficient Balance",
+        description:
+          "You don't have enough referral balance for this withdrawal",
+      });
+      return;
+    }
+
     try {
       setIsWithdrawing(true);
-      const details = {
-        ...(withdrawalMethod.type === "bank" && {
-          accountName: withdrawalMethod.bankDetails?.name,
-          accountNumber: withdrawalMethod.bankDetails?.accountNo,
-          bankName: withdrawalMethod.bankDetails?.bankName,
-          ifscCode: withdrawalMethod.bankDetails?.ifscCode,
-        }),
-        ...(withdrawalMethod.type === "crypto" && {
-          walletAddress: withdrawalMethod.cryptoDetails?.address,
-          network: withdrawalMethod.cryptoDetails?.network,
-        }),
-      };
-
       const response = await fetch("/api/wallet/withdraw", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
-          amount: parseFloat(withdrawAmount),
+          amount,
           method: withdrawalMethod.type,
-          details,
+          details:
+            withdrawalMethod.type === "bank"
+              ? withdrawalMethod.bankDetails
+              : withdrawalMethod.cryptoDetails,
         }),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.error || "Failed to submit withdrawal");
+        const error = await response.json();
+        throw new Error(error.message || "Failed to process withdrawal");
       }
 
       toast({
-        title: "Success",
-        description:
-          data.message || "Withdrawal request submitted successfully",
+        title: "Withdrawal Requested",
+        description: "Your withdrawal request has been submitted successfully",
       });
+
       setIsWithdrawDialogOpen(false);
       setWithdrawAmount("");
-      fetchWallet();
+      fetchWallet(); // Refresh wallet data
     } catch (error) {
       console.error("Withdrawal error:", error);
       toast({
         variant: "destructive",
         title: "Withdrawal Failed",
         description:
-          error instanceof Error
-            ? error.message
-            : "Failed to submit withdrawal request",
+          error instanceof Error ? error.message : "Please try again later",
       });
     } finally {
       setIsWithdrawing(false);
@@ -157,160 +196,118 @@ export function WalletOverview() {
   };
 
   if (isLoading) {
-    return (
-      <div className="space-y-6">
-        {/* Loading Skeleton for Wallet Summary */}
-        <div className="grid gap-4 md:grid-cols-3">
-          {[...Array(3)].map((_, i) => (
-            <Card className="p-6" key={i}>
-              <div className="flex items-center gap-4">
-                <Skeleton className="h-8 w-8 rounded" />
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-6 w-32" />
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-
-        {/* Loading Skeleton for Quick Actions */}
-        <Card className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <Skeleton className="h-6 w-32" />
-            <div className="flex gap-2">
-              <Skeleton className="h-9 w-32" />
-              <Skeleton className="h-9 w-32" />
-            </div>
-          </div>
-          <Separator className="mb-6" />
-
-          {/* Loading Skeleton for Transactions */}
-          <div className="space-y-4">
-            <Skeleton className="h-5 w-36" />
-            {[...Array(3)].map((_, i) => (
-              <div
-                key={i}
-                className="flex items-center justify-between py-3 border-b last:border-0"
-              >
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-3 w-32" />
-                </div>
-                <div className="text-right space-y-2">
-                  <Skeleton className="h-4 w-16" />
-                  <Skeleton className="h-3 w-24" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-      </div>
-    );
+    return <WalletSkeleton />;
   }
 
   return (
     <div className="space-y-6">
-      {/* Wallet Summary */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2">
         <Card className="p-6">
-          <div className="flex items-center gap-4">
-            <Wallet className="h-8 w-8 text-primary" />
+          <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">Total Balance</p>
-              <h3 className="text-2xl font-bold">${wallet?.balance || 0}</h3>
+              <h3 className="text-lg font-medium">Total Balance</h3>
+              <p className="text-3xl font-bold mt-2">
+                ${wallet?.balance.toFixed(2) || "0.00"}
+              </p>
             </div>
+            <div className="bg-primary/10 p-3 rounded-full">
+              <Wallet className="h-6 w-6 text-primary" />
+            </div>
+          </div>
+          <Separator className="my-4" />
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="text-sm text-muted-foreground">Referral Balance</p>
+              <p className="text-lg font-medium">
+                ${wallet?.referralBalance.toFixed(2) || "0.00"}
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => openWithdrawDialog("bank")}
+              disabled={!wallet?.referralBalance || wallet.referralBalance <= 0}
+            >
+              <ArrowUpRight className="h-4 w-4 mr-2" />
+              Withdraw
+            </Button>
           </div>
         </Card>
 
         <Card className="p-6">
-          <div className="flex items-center gap-4">
-            <Gift className="h-8 w-8 text-primary" />
+          <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">Referral Bonus</p>
-              <h3 className="text-2xl font-bold">
-                ${wallet?.referralBonus || 0}
-              </h3>
+              <h3 className="text-lg font-medium">Withdrawal Methods</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Choose how you want to receive your earnings
+              </p>
+            </div>
+            <div className="bg-primary/10 p-3 rounded-full">
+              <CreditCard className="h-6 w-6 text-primary" />
             </div>
           </div>
-        </Card>
-
-        <Card className="p-6">
-          <div className="flex items-center gap-4">
-            <Coins className="h-8 w-8 text-primary" />
-            <div>
-              <p className="text-sm text-muted-foreground">Stipend Bonus</p>
-              <h3 className="text-2xl font-bold">
-                ${wallet?.stipendBonus || 0}
-              </h3>
-            </div>
+          <Separator className="my-4" />
+          <div className="space-y-4">
+            <PaymentMethodCard
+              title="Bank Transfer"
+              description="Withdraw directly to your bank account"
+              icon={<Landmark className="h-5 w-5" />}
+              onClick={() => openWithdrawDialog("bank")}
+              disabled={!wallet?.referralBalance || wallet.referralBalance <= 0}
+            />
+            <PaymentMethodCard
+              title="Crypto Wallet"
+              description="Withdraw to your cryptocurrency wallet"
+              icon={<Coins className="h-5 w-5" />}
+              onClick={() => openWithdrawDialog("crypto")}
+              disabled={!wallet?.referralBalance || wallet.referralBalance <= 0}
+            />
           </div>
         </Card>
       </div>
 
-      {/* Actions */}
       <Card className="p-6">
-        <div className="flex flex-col lg:flex-row gap-2 items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold">Payment Quick Actions</h3>
-          <div className="flex  gap-2">
-            <Button
-              variant="outline"
-              onClick={() => openWithdrawDialog("bank")}
-              className="flex items-center gap-2"
-            >
-              <Landmark className="h-4 w-4" />
-              Bank Transfer
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => openWithdrawDialog("crypto")}
-              className="flex items-center gap-2"
-            >
-              <Wallet className="h-4 w-4" />
-              Crypto Withdrawal
-            </Button>
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-medium">Referral Earnings</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Track your referral program earnings
+            </p>
+          </div>
+          <div className="bg-primary/10 p-3 rounded-full">
+            <Gift className="h-6 w-6 text-primary" />
           </div>
         </div>
-        <Separator className="mb-6" />
-
-        {/* Recent Transactions */}
+        <Separator className="my-4" />
         <div className="space-y-4">
-          <h4 className="font-medium">Recent Transactions</h4>
-          {wallet?.transactions?.length ? (
-            wallet.transactions.map((tx: any) => (
-              <div
-                key={tx.id}
-                className="flex items-center justify-between py-3 border-b last:border-0"
-              >
-                <div>
-                  <p className="font-medium">{tx.type}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {tx.description}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p
-                    className={
-                      tx.amount > 0 ? "text-green-600" : "text-red-600"
-                    }
-                  >
-                    ${Math.abs(tx.amount)}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {new Date(tx.createdAt).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-            ))
-          ) : (
-            <p className="text-muted-foreground text-center py-4">
-              No recent transactions
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="text-sm text-muted-foreground">
+                Available for Withdrawal
+              </p>
+              <p className="text-lg font-medium">
+                ${wallet?.referralBalance.toFixed(2) || "0.00"}
+              </p>
+            </div>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => openWithdrawDialog("bank")}
+              disabled={!wallet?.referralBalance || wallet.referralBalance <= 0}
+            >
+              <DollarSign className="h-4 w-4 mr-2" />
+              Withdraw Now
+            </Button>
+          </div>
+          <div className="bg-muted p-4 rounded-lg">
+            <p className="text-sm">
+              <strong>Note:</strong> Withdrawals are processed within 3-5
+              business days. Minimum withdrawal amount is $10.
             </p>
-          )}
+          </div>
         </div>
       </Card>
 
-      {/* Withdrawal Dialog */}
       <Dialog
         open={isWithdrawDialogOpen}
         onOpenChange={setIsWithdrawDialogOpen}
@@ -348,6 +345,9 @@ export function WalletOverview() {
                     }}
                   />
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Available: ${wallet?.referralBalance.toFixed(2) || "0.00"}
+                </p>
               </div>
 
               {withdrawalMethod.type === "bank" ? (
@@ -473,6 +473,68 @@ export function WalletOverview() {
           </div>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function WalletSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <Skeleton className="h-6 w-32" />
+              <Skeleton className="h-8 w-24 mt-2" />
+            </div>
+            <Skeleton className="h-12 w-12 rounded-full" />
+          </div>
+          <Separator className="my-4" />
+          <div className="flex justify-between items-center">
+            <div>
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-6 w-16 mt-1" />
+            </div>
+            <Skeleton className="h-9 w-24" />
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <Skeleton className="h-6 w-40" />
+              <Skeleton className="h-4 w-64 mt-1" />
+            </div>
+            <Skeleton className="h-12 w-12 rounded-full" />
+          </div>
+          <Separator className="my-4" />
+          <div className="space-y-4">
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-16 w-full" />
+          </div>
+        </Card>
+      </div>
+
+      <Card className="p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <Skeleton className="h-6 w-40" />
+            <Skeleton className="h-4 w-64 mt-1" />
+          </div>
+          <Skeleton className="h-12 w-12 rounded-full" />
+        </div>
+        <Separator className="my-4" />
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-6 w-24 mt-1" />
+            </div>
+            <Skeleton className="h-9 w-32" />
+          </div>
+          <Skeleton className="h-16 w-full" />
+        </div>
+      </Card>
     </div>
   );
 }
