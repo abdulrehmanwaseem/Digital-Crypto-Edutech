@@ -313,7 +313,7 @@ export function SiteHeader({ session, siteSettings }) {
               <Link href="/login" className="hidden md:block">
                 <Button variant="ghost">Login</Button>
               </Link>
-              <Link href="/register">
+              <Link href="/register" className="hidden md:block">
                 <Button>CONTINUE WITH OUR COURSE </Button>
               </Link>
               {/* Mobile Menu Button */}
@@ -339,6 +339,7 @@ export function SiteHeader({ session, siteSettings }) {
                         <span>{label}</span>
                       </Link>
                     ))}
+
                     <Link
                       href="/login"
                       className="flex items-center space-x-2 text-sm font-medium"

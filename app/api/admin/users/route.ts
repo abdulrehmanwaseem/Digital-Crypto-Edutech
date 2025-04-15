@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { Prisma, Role } from "@prisma/client";
 
 export async function GET(request: Request) {
   try {
@@ -22,7 +23,7 @@ export async function GET(request: Request) {
     const skip = (page - 1) * limit;
 
     // Build the where clause for filtering
-    const where = {
+    const where: Prisma.UserWhereInput = {
       AND: [
         // Search filter
         search
@@ -38,7 +39,7 @@ export async function GET(request: Request) {
           ? { emailVerified: status === "VERIFIED" ? { not: null } : null }
           : {},
         // Role filter
-        role ? { role: role } : {},
+        role ? { role: role as Role } : {},
       ],
     };
 
@@ -46,21 +47,7 @@ export async function GET(request: Request) {
     const [users, totalCount] = await prisma.$transaction([
       prisma.user.findMany({
         where,
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          role: true,
-          occupation: true,
-          emailVerified: true,
-          createdAt: true,
-          referralCode: true,
-          _count: {
-            select: {
-              enrollments: true,
-              payments: true,
-            },
-          },
+        include: {
           profile: {
             select: {
               avatar: true,
@@ -69,18 +56,38 @@ export async function GET(request: Request) {
           },
           payments: {
             select: {
+              id: true,
               status: true,
               amount: true,
-            },
-          },
-          enrollments: {
-            select: {
-              status: true,
+              courseId: true,
+              proofUrl: true,
+              createdAt: true,
               course: {
                 select: {
                   title: true,
                 },
               },
+            },
+          },
+          wallet: {
+            select: {
+              balance: true,
+              referralBalance: true,
+            },
+          },
+          referralStats: {
+            select: {
+              totalReferrals: true,
+              activeReferrals: true,
+              totalEarnings: true,
+            },
+          },
+          _count: {
+            select: {
+              payments: true,
+              referralBonuses: true,
+              referredBonuses: true,
+              withdrawals: true,
             },
           },
         },
@@ -104,19 +111,24 @@ export async function GET(request: Request) {
       location: user.profile?.location || "Not specified",
       referralCode: user.referralCode,
       stats: {
-        totalEnrollments: user._count.enrollments,
         totalPayments: user._count.payments,
-        activeEnrollments: user.enrollments.filter((e) => e.status === "ACTIVE")
-          .length,
-        pendingPayments: user.payments.filter((p) => p.status === "PENDING")
-          .length,
+        totalReferrals: user._count.referralBonuses,
+        totalReferred: user._count.referredBonuses,
+        totalWithdrawals: user._count.withdrawals,
         totalSpent: user.payments
-          .filter((p) => p.status === "VERIFIED")
+          .filter((p) => p.status === "PAID")
           .reduce((sum, p) => sum + p.amount, 0),
+        walletBalance: user.wallet?.balance || 0,
+        referralBalance: user.wallet?.referralBalance || 0,
+        totalEarnings: user.referralStats?.totalEarnings || 0,
       },
-      courses: user.enrollments.map((e) => ({
-        title: e.course.title,
-        status: e.status,
+      courses: user.payments.map((p) => ({
+        id: p.id,
+        title: p.course?.title || "Unknown Course",
+        amount: p.amount,
+        status: p.status,
+        proofUrl: p.proofUrl,
+        date: p.createdAt,
       })),
     }));
 
@@ -176,19 +188,13 @@ export async function PATCH(request: Request) {
 
       case "SUSPEND":
         // Add user suspension logic
-        await prisma.$transaction([
-          prisma.user.update({
-            where: { id: userId },
-            data: {
-              emailVerified: null,
-              // Add any other suspension-related fields
-            },
-          }),
-          prisma.enrollment.updateMany({
-            where: { userId },
-            data: { status: "SUSPENDED" },
-          }),
-        ]);
+        await prisma.user.update({
+          where: { id: userId },
+          data: {
+            emailVerified: null,
+            // Add any other suspension-related fields
+          },
+        });
         break;
 
       case "UPDATE_PROFILE":
@@ -244,9 +250,10 @@ export async function DELETE(request: Request) {
 
     // Delete user and related data
     await prisma.$transaction([
-      prisma.enrollment.deleteMany({ where: { userId } }),
       prisma.payment.deleteMany({ where: { userId } }),
       prisma.profile.delete({ where: { userId } }),
+      prisma.referralStats.delete({ where: { userId } }),
+      prisma.wallet.delete({ where: { userId } }),
       prisma.user.delete({ where: { id: userId } }),
     ]);
 

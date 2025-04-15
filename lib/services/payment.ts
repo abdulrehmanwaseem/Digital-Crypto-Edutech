@@ -19,8 +19,8 @@ export class PaymentService {
     userId: string;
     courseId: string;
     amount: number;
-    currency: string;
     proofImageUrl?: string;
+    referralCode?: string;
   }) {
     return prisma.$transaction(async (tx) => {
       // Get user with referral info
@@ -43,66 +43,74 @@ export class PaymentService {
           userId: data.userId,
           courseId: data.courseId,
           amount: data.amount,
-          currency: data.currency,
-          proofImageUrl: data?.proofImageUrl || "",
           status: "PENDING",
+          proofUrl: data?.proofImageUrl || "",
         },
       });
 
-      // Create enrollment record
-      await tx.enrollment.create({
-        data: {
-          userId: data.userId,
-          courseId: data.courseId,
-          status: "PENDING",
-        },
-      });
-
-      // Handle referral commission if user was referred
+      // If user was referred, process referral bonus
       if (user.referredBy) {
-        const commissionRate = await PaymentService.calculateCommissionRate(
-          user.referredBy
-        );
-        const commission = (data.amount * commissionRate) / 100;
-
-        // Update referrer's wallet
-        const wallet = await tx.wallet.upsert({
-          where: { userId: user.referredBy },
-          create: {
-            userId: user.referredBy,
-            balance: commission,
-            referralBonus: commission,
-          },
-          update: {
-            balance: { increment: commission },
-            referralBonus: { increment: commission },
+        const referrer = await tx.user.findUnique({
+          where: { id: user.referredBy },
+          include: {
+            referralStats: true,
+            wallet: true,
           },
         });
 
-        // Update referral stats
-        await tx.referralStats.upsert({
-          where: { userId: user.referredBy },
-          create: {
-            userId: user.referredBy,
-            totalReferrals: 1,
-            activeReferrals: 1,
-            earnings: commission,
-          },
-          update: {
-            earnings: { increment: commission },
-          },
-        });
+        if (referrer) {
+          const bonusAmount = data.amount * 0.1; // 10% commission
 
-        // Create transaction record
-        await tx.walletTransaction.create({
-          data: {
-            walletId: wallet.id,
-            amount: commission,
-            type: "REFERRAL_BONUS",
-            status: "COMPLETED",
-            description: `Referral commission for course purchase`,
-          },
-        });
+          // Create referral bonus
+          await tx.referralBonus.create({
+            data: {
+              userId: referrer.id,
+              referredUserId: user.id,
+              courseId: data.courseId,
+              amount: bonusAmount,
+              type: "COURSE_PURCHASE",
+              status: "PENDING",
+            },
+          });
+
+          // Update referrer's stats
+          if (referrer.referralStats) {
+            await tx.referralStats.update({
+              where: { id: referrer.referralStats.id },
+              data: {
+                totalReferrals: { increment: 1 },
+                activeReferrals: { increment: 1 },
+                totalEarnings: { increment: bonusAmount },
+              },
+            });
+          } else {
+            await tx.referralStats.create({
+              data: {
+                userId: referrer.id,
+                totalReferrals: 1,
+                activeReferrals: 1,
+                totalEarnings: bonusAmount,
+              },
+            });
+          }
+
+          // Update referrer's wallet
+          if (referrer.wallet) {
+            await tx.wallet.update({
+              where: { id: referrer.wallet.id },
+              data: {
+                referralBalance: { increment: bonusAmount },
+              },
+            });
+          } else {
+            await tx.wallet.create({
+              data: {
+                userId: referrer.id,
+                referralBalance: bonusAmount,
+              },
+            });
+          }
+        }
       }
 
       return payment;

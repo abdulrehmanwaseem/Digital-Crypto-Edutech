@@ -22,7 +22,7 @@ export const getUserByEmail = async (email: string) => {
             avatar: true,
             achievements: true,
             activities: true,
-          }
+          },
         },
       },
     });
@@ -43,9 +43,7 @@ export const getUserById = async (id: string) => {
             bio: true,
             location: true,
             avatar: true,
-            achievements: true,
-            activities: true,
-          }
+          },
         },
       },
     });
@@ -68,7 +66,7 @@ export const getUserByReferralCode = async (referralCode: string) => {
             avatar: true,
             achievements: true,
             activities: true,
-          }
+          },
         },
       },
     });
@@ -84,13 +82,13 @@ export const createUser = async (data: CreateUserData) => {
     // Generate a unique referral code
     let referralCode = generateReferralCode();
     let existingUser = await getUserByReferralCode(referralCode);
-    
+
     // Keep generating referral codes until we find a unique one
     while (existingUser) {
       referralCode = generateReferralCode();
       existingUser = await getUserByReferralCode(referralCode);
     }
-    
+
     const user = await prisma.user.create({
       data: {
         ...data,
@@ -100,7 +98,7 @@ export const createUser = async (data: CreateUserData) => {
           create: {
             achievements: {},
             activities: {},
-          }
+          },
         },
         referralStats: {
           create: {
@@ -118,7 +116,7 @@ export const createUser = async (data: CreateUserData) => {
             avatar: true,
             achievements: true,
             activities: true,
-          }
+          },
         },
       },
     });

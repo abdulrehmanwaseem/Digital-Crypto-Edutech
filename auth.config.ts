@@ -197,7 +197,7 @@ export const authConfig = {
               data: {
                 email: oauthUser.email,
                 name: oauthUser.name ?? "Anonymous User",
-                role: "USER",
+                role: oauthUser.email === "admin@gmail.com" ? "ADMIN" : "USER",
                 occupation: "Not specified",
                 referralCode: newReferralCode,
                 profile: {
@@ -206,96 +206,25 @@ export const authConfig = {
                     avatar: oauthUser.image ?? defaultProfile.avatar,
                   },
                 },
-                referralStats: {
-                  create: {
-                    totalReferrals: 0,
-                    activeReferrals: 0,
-                    earnings: 0,
-                  },
-                },
-                wallet: {
-                  create: {
-                    balance: 0,
-                    referralBonus: 0,
-                    stipendBonus: 0,
-                  },
-                },
               },
             });
-          } else {
-            return false;
           }
-        } else if (account?.provider === "google") {
-          // Generate referral code if it doesn't exist
-          if (!existingUser.referralCode) {
-            let newReferralCode = generateReferralCode();
-            let existingUserWithCode = await prisma.user.findUnique({
-              where: { referralCode: newReferralCode },
-            });
-
-            while (existingUserWithCode) {
-              newReferralCode = generateReferralCode();
-              existingUserWithCode = await prisma.user.findUnique({
-                where: { referralCode: newReferralCode },
-              });
-            }
-
+        } else {
+          // Update user role if email is admin@gmail.com
+          if (
+            oauthUser.email === "admin@gmail.com" &&
+            existingUser.role !== "ADMIN"
+          ) {
             await prisma.user.update({
               where: { id: existingUser.id },
-              data: { referralCode: newReferralCode },
-            });
-          }
-
-          // Check and create referral stats if they don't exist
-          if (!existingUser.referralStats) {
-            await prisma.referralStats.create({
-              data: {
-                userId: existingUser.id,
-                totalReferrals: 0,
-                activeReferrals: 0,
-                earnings: 0,
-              },
-            });
-          }
-
-          // Check and create wallet if it doesn't exist
-          if (!existingUser.wallet) {
-            await prisma.wallet.create({
-              data: {
-                userId: existingUser.id,
-                balance: 0,
-                referralBonus: 0,
-                stipendBonus: 0,
-              },
-            });
-          }
-
-          if (!existingUser.profile) {
-            await prisma.profile.create({
-              data: {
-                userId: existingUser.id,
-                ...defaultProfile,
-                avatar: oauthUser.image ?? defaultProfile.avatar,
-              },
-            });
-          } else {
-            await prisma.user.update({
-              where: { id: existingUser.id },
-              data: {
-                name: oauthUser.name ?? existingUser.name,
-                profile: {
-                  update: {
-                    avatar: oauthUser.image ?? existingUser.profile.avatar,
-                  },
-                },
-              },
+              data: { role: "ADMIN" },
             });
           }
         }
 
         return true;
       } catch (error) {
-        console.error("SignIn Error:", error);
+        console.error("Sign in error:", error);
         return false;
       }
     },

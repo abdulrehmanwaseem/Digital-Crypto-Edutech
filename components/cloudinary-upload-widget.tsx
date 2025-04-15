@@ -2,8 +2,9 @@
 
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Upload, Check, Loader2 } from "lucide-react";
+import { Upload, Check, Loader2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 interface CloudinaryUploadWidgetProps {
   onUpload: (url: string) => void;
@@ -15,15 +16,18 @@ interface CloudinaryUploadWidgetProps {
   };
   children: React.ReactNode;
   onError?: (error: Error) => void;
+  className?: string;
 }
 
 export function CloudinaryUploadWidget({
   onUpload,
   children,
   onError,
+  className,
 }: CloudinaryUploadWidgetProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadComplete, setUploadComplete] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -32,10 +36,12 @@ export function CloudinaryUploadWidget({
     if (!file) return;
 
     setIsUploading(true);
+    setError(null);
 
     // Validate file type and size
     if (!file.type.startsWith("image/")) {
       const error = new Error("Please upload an image file");
+      setError("Please upload an image file");
       onError?.(error);
       toast({
         title: "Error",
@@ -49,6 +55,7 @@ export function CloudinaryUploadWidget({
     if (file.size > 5 * 1024 * 1024) {
       // 5MB limit
       const error = new Error("File size should be less than 5MB");
+      setError("File size should be less than 5MB");
       onError?.(error);
       toast({
         title: "Error",
@@ -82,8 +89,17 @@ export function CloudinaryUploadWidget({
     }
   };
 
+  const handleRemove = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+    setError(null);
+    onUpload("");
+  };
+
   return (
-    <>
+    <div className={cn("relative", className)}>
       <input
         type="file"
         ref={fileInputRef}
@@ -96,18 +112,36 @@ export function CloudinaryUploadWidget({
         variant="outline"
         size="sm"
         onClick={handleClick}
-        className="flex items-center"
+        className={cn(
+          "flex items-center w-full",
+          error && "border-red-500",
+          uploadComplete && "border-green-500"
+        )}
         disabled={isUploading}
       >
         {isUploading ? (
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         ) : uploadComplete ? (
           <Check className="mr-2 h-4 w-4 text-green-500" />
+        ) : error ? (
+          <X className="mr-2 h-4 w-4 text-red-500" />
         ) : (
           <Upload className="mr-2 h-4 w-4" />
         )}
         {isUploading ? "Uploading..." : uploadComplete ? "Uploaded!" : children}
       </Button>
-    </>
+      {error && <p className="text-sm text-red-500 mt-1">{error}</p>}
+      {uploadComplete && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="absolute right-2 top-1/2 -translate-y-1/2"
+          onClick={handleRemove}
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      )}
+    </div>
   );
 }

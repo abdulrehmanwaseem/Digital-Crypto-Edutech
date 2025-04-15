@@ -18,16 +18,19 @@ import Image from "next/image";
 
 export const columns: ColumnDef<any>[] = [
   {
-    accessorKey: "userName",
+    accessorKey: "user",
     header: "User",
-    cell: ({ row }) => (
-      <div>
-        <div className="font-medium">{row.original.userName}</div>
-        <div className="text-sm text-muted-foreground">
-          {row.original.userId}
+    cell: ({ row }) => {
+      console.log(row);
+      return (
+        <div>
+          <div className="font-medium">{row.original.user.name}</div>
+          <div className="text-sm text-muted-foreground">
+            {row.original.user.name}
+          </div>
         </div>
-      </div>
-    ),
+      );
+    },
   },
   {
     accessorKey: "amount",
@@ -41,9 +44,9 @@ export const columns: ColumnDef<any>[] = [
     header: "Course",
     cell: ({ row }) => (
       <div>
-        <div className="font-medium">{row.original.courseName}</div>
+        <div className="font-medium">{row.original.course.title}</div>
         <div className="text-sm text-muted-foreground">
-          {row.original.courseId}
+          {row.original.course.title}
         </div>
       </div>
     ),
@@ -151,7 +154,7 @@ export const columns: ColumnDef<any>[] = [
                     <div className="mt-2 space-y-1 text-sm">
                       <p>
                         <span className="text-muted-foreground">ID:</span>{" "}
-                        {row.original.transactionId}
+                        {row.original.id}
                       </p>
                       <p>
                         <span className="text-muted-foreground">Amount:</span> $
@@ -172,11 +175,11 @@ export const columns: ColumnDef<any>[] = [
                     <div className="mt-2 space-y-1 text-sm">
                       <p>
                         <span className="text-muted-foreground">Name:</span>{" "}
-                        {row.original.courseName}
+                        {row.original.course.title}
                       </p>
                       <p>
                         <span className="text-muted-foreground">ID:</span>{" "}
-                        {row.original.courseId}
+                        {row.original.course.id}
                       </p>
                     </div>
                   </div>

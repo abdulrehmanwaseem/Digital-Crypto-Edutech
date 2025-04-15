@@ -73,88 +73,94 @@ export async function POST(req: Request) {
     const newReferralCode = generateReferralCode();
 
     // Create user and handle referral bonus in a transaction
-    const result = await prisma.$transaction(async (tx) => {
-      // Create the new user
-      const user = await tx.user.create({
-        data: {
-          email,
-          hashedPassword,
-          name,
-          occupation,
-          incomeRange,
-          occupationType,
-          phone,
-          role: isFirstUser ? "ADMIN" : "USER",
-          referralCode: newReferralCode,
-          referredBy,
-          profile: {
-            create: {
-              ...defaultProfile,
+    const result = await prisma.$transaction(
+      async (tx) => {
+        // Create the new user
+        const user = await tx.user.create({
+          data: {
+            email,
+            hashedPassword,
+            name,
+            occupation,
+            incomeRange,
+            occupationType,
+            phone,
+            role: isFirstUser ? "ADMIN" : "USER",
+            referralCode: newReferralCode,
+            referredBy,
+            profile: {
+              create: {
+                ...defaultProfile,
+              },
             },
           },
-        },
-        include: {
-          profile: true,
-        },
-      });
-
-      // If user was referred, create referral bonus and update stats
-      if (referredBy) {
-        // Create or get referrer's wallet
-        const referrerWallet = await tx.wallet.upsert({
-          where: { userId: referredBy },
-          create: {
-            userId: referredBy,
-            balance: 5, // $5 registration bonus
-            referralBalance: 5,
-          },
-          update: {
-            balance: { increment: 5 },
-            referralBalance: { increment: 5 },
+          include: {
+            profile: true,
           },
         });
 
-        // Create referral bonus record
-        await tx.referralBonus.create({
-          data: {
-            userId: referredBy,
-            referredUserId: user.id,
-            amount: 5,
-            type: "REGISTRATION",
-            status: "PENDING",
-          },
-        });
+        // If user was referred, create referral bonus and update stats
+        if (referredBy) {
+          // Create or get referrer's wallet
+          const referrerWallet = await tx.wallet.upsert({
+            where: { userId: referredBy },
+            create: {
+              userId: referredBy,
+              balance: 5, // $5 registration bonus
+              referralBalance: 5,
+            },
+            update: {
+              balance: { increment: 5 },
+              referralBalance: { increment: 5 },
+            },
+          });
 
-        // Create or update referral stats
-        await tx.referralStats.upsert({
-          where: { userId: referredBy },
-          create: {
-            userId: referredBy,
-            totalReferrals: 1,
-            activeReferrals: 1,
-            totalEarnings: 5,
-          },
-          update: {
-            totalReferrals: { increment: 1 },
-            activeReferrals: { increment: 1 },
-            totalEarnings: { increment: 5 },
-          },
-        });
+          // Create referral bonus record
+          await tx.referralBonus.create({
+            data: {
+              userId: referredBy,
+              referredUserId: user.id,
+              amount: 5,
+              type: "REGISTRATION",
+              status: "PENDING",
+            },
+          });
 
-        // Create wallet transaction
-        await tx.walletTransaction.create({
-          data: {
-            walletId: referrerWallet.id,
-            amount: 5,
-            type: "REFERRAL_BONUS",
-            status: "COMPLETED",
-            description: "Registration referral bonus",
-          },
-        });
+          // Create or update referral stats
+          await tx.referralStats.upsert({
+            where: { userId: referredBy },
+            create: {
+              userId: referredBy,
+              totalReferrals: 1,
+              activeReferrals: 1,
+              totalEarnings: 5,
+            },
+            update: {
+              totalReferrals: { increment: 1 },
+              activeReferrals: { increment: 1 },
+              totalEarnings: { increment: 5 },
+            },
+          });
+
+          // Create wallet transaction
+          await tx.walletTransaction.create({
+            data: {
+              walletId: referrerWallet.id,
+              amount: 5,
+              type: "REFERRAL_BONUS",
+              status: "COMPLETED",
+              description: "Registration referral bonus",
+            },
+          });
+        }
+
+        return user;
+      },
+      {
+        timeout: 10000, // Increase timeout to 10 seconds
+        maxWait: 15000, // Maximum time to wait for transaction to start
       }
-
-      return user;
-    });
+    );
 
     return NextResponse.json(
       {

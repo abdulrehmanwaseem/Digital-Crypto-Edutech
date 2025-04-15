@@ -41,18 +41,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     async session({ session, token }) {
       if (!token.role && token.sub) {
-        try {
-          const user = await getUserById(token.sub);
-          if (user) {
-            token.role = user.role;
-          } else {
-            token.role = "USER";
-            console.warn(`User with ID ${token.sub} not found in database`);
-          }
-        } catch (error) {
-          console.error("Error fetching user role:", error);
-          token.role = "USER";
-        }
+        const user = await getUserById(token.sub);
+        token.role = user?.role;
+
+        console.log(user);
       }
 
       return {

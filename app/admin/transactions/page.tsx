@@ -48,6 +48,7 @@ export default function TransactionsPage() {
     limit: 10,
   });
 
+  console.log(transactions);
   const fetchTransactions = async () => {
     try {
       setLoading(true);

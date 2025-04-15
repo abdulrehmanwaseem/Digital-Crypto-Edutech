@@ -51,29 +51,10 @@ export async function PATCH(
         where: { id: params.id },
         data: {
           status: action === "APPROVE" ? "VERIFIED" : "REJECTED",
-          processedAt: new Date(),
         },
       });
 
       if (action === "APPROVE") {
-        // Create or update enrollment
-        await tx.enrollment.upsert({
-          where: {
-            userId_courseId: {
-              userId: payment.userId,
-              courseId: payment.courseId,
-            },
-          },
-          create: {
-            userId: payment.userId,
-            courseId: payment.courseId,
-            status: "ACTIVE",
-          },
-          update: {
-            status: "ACTIVE",
-          },
-        });
-
         // Process referral bonus if user was referred
         if (payment.user.referredBy) {
           const referralBonus = payment.course.referralBonus as {
@@ -106,11 +87,9 @@ export async function PATCH(
             create: {
               userId: payment.user.referredBy,
               balance: bonusAmount,
-              referralBonus: bonusAmount,
             },
             update: {
               balance: { increment: bonusAmount },
-              referralBonus: { increment: bonusAmount },
             },
           });
 
@@ -121,10 +100,10 @@ export async function PATCH(
               userId: payment.user.referredBy,
               totalReferrals: 1,
               activeReferrals: 1,
-              earnings: bonusAmount,
+              totalEarnings: bonusAmount,
             },
             update: {
-              earnings: { increment: bonusAmount },
+              totalEarnings: { increment: bonusAmount },
             },
           });
 

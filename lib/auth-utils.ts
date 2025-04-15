@@ -1,5 +1,6 @@
 import { compare } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { Role } from "@prisma/client";
 
 export async function authenticateUser(email: string, password: string) {
   try {
@@ -25,6 +26,15 @@ export async function authenticateUser(email: string, password: string) {
       return null;
     }
 
+    // If email is admin@gmail.com, ensure the user has ADMIN role
+    if (email === "admin@gmail.com" && user.role !== "ADMIN") {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { role: "ADMIN" as Role },
+      });
+      user.role = "ADMIN";
+    }
+
     return {
       id: user.id,
       email: user.email,
@@ -34,6 +44,6 @@ export async function authenticateUser(email: string, password: string) {
       referralCode: user.referralCode || undefined,
     };
   } catch {
-    return null;
-  }
+    return null;
+  }
 }

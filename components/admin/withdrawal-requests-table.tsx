@@ -64,6 +64,8 @@ export function WithdrawalRequestsTable({
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
 
+  console.log(selectedWithdrawal);
+
   const handleProcess = async (status: "APPROVED" | "REJECTED") => {
     if (!selectedWithdrawal) return;
 
@@ -87,7 +89,6 @@ export function WithdrawalRequestsTable({
       setProcessingStatus(null);
     }
   };
-
   return (
     <>
       <Table>
